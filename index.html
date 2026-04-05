@@ -1,0 +1,2803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Family Vault"/>
+<meta name="application-name" content="Family Vault"/>
+<meta name="theme-color" content="#c4922a"/>
+<meta name="description" content="Secure family document vault"/>
+<link rel="manifest" id="pwa-manifest"/>
+<link rel="apple-touch-icon" id="apple-icon"/>
+<title>Family Vault</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f7f6f2;--surface:#ffffff;--surface2:#f0ede6;--surface3:#e8e4da;
+  --text:#18170f;--text2:#5a5647;--text3:#9c9488;
+  --border:#dbd6ca;--border2:#ccc7bb;
+  --gold:#c4922a;--gold-l:rgba(196,146,42,0.12);--gold-d:#a57820;
+  --blue:#1e5fa6;--blue-l:rgba(30,95,166,0.1);
+  --green:#1a7a4a;--green-l:rgba(26,122,74,0.1);
+  --red:#b02a1a;--red-l:rgba(176,42,26,0.1);
+  --amber:#c47a1a;--amber-l:rgba(196,122,26,0.1);
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'Sora',sans-serif;
+  --r:6px;--rl:12px;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+
+/* LOCK */
+#lock-screen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:var(--bg);}
+.lock-box{width:360px;padding:44px 36px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.09);}
+.lock-icon{font-size:36px;margin-bottom:16px;}
+.lock-title{font-family:var(--sans);font-size:24px;font-weight:700;margin-bottom:6px;}
+.lock-sub{font-size:13px;color:var(--text3);margin-bottom:28px;line-height:1.6;}
+.lock-input{width:100%;padding:12px 16px;font-size:15px;letter-spacing:0.1em;border:1.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:var(--mono);outline:none;text-align:center;transition:border-color 0.15s;margin-bottom:12px;}
+.lock-input:focus{border-color:var(--gold);}
+.lock-btn{width:100%;padding:13px;font-size:14px;font-weight:600;background:var(--gold);color:#fff;border:none;border-radius:var(--r);cursor:pointer;font-family:var(--sans);transition:opacity 0.15s;}
+.lock-btn:hover{opacity:0.88;}
+.lock-err{font-size:12px;color:var(--red);margin-top:10px;min-height:16px;font-family:var(--mono);}
+
+/* APP */
+#app{display:none;}
+.top-bar{background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:12px 24px;position:sticky;top:0;z-index:200;}
+.app-logo{font-family:var(--sans);font-size:17px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
+.app-logo-icon{width:28px;height:28px;background:var(--gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.top-actions{display:flex;align-items:center;gap:8px;}
+.tbtn{padding:6px 13px;font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;font-family:var(--sans);transition:all 0.15s;border:1px solid var(--border);background:transparent;color:var(--text2);}
+.tbtn:hover{background:var(--surface2);color:var(--text);}
+.tbtn.gold{background:var(--gold);color:#fff;border-color:var(--gold);}
+.tbtn.gold:hover{background:var(--gold-d);}
+.tbtn.red{color:var(--red);border-color:rgba(176,42,26,0.3);}
+.tbtn.red:hover{background:var(--red-l);}
+
+/* LAYOUT */
+.layout{display:flex;min-height:calc(100vh - 53px);}
+.sidebar{width:210px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:16px 0;position:sticky;top:53px;height:calc(100vh - 53px);overflow-y:auto;}
+.sb-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);font-family:var(--mono);padding:6px 16px 3px;}
+.sb-btn{display:flex;align-items:center;gap:8px;width:100%;padding:8px 14px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);text-align:left;transition:all 0.12s;border-left:3px solid transparent;}
+.sb-btn:hover{background:var(--surface2);color:var(--text);}
+.sb-btn.active{background:var(--gold-l);color:var(--gold);font-weight:600;border-left-color:var(--gold);}
+.sb-btn .ico{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sb-count{margin-left:auto;font-size:10px;font-family:var(--mono);background:var(--surface3);color:var(--text3);padding:1px 6px;border-radius:10px;}
+.sb-divider{height:1px;background:var(--border);margin:10px 14px;}
+.sb-custom-section{padding:0 10px;}
+.sb-custom-btn{display:flex;align-items:center;gap:8px;width:100%;padding:7px 12px;border:none;background:transparent;color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);text-align:left;transition:all 0.12s;border-left:3px solid transparent;border-radius:0;}
+.sb-custom-btn:hover{background:var(--surface2);color:var(--text);}
+.sb-custom-btn.active{background:var(--gold-l);color:var(--gold);font-weight:600;border-left-color:var(--gold);}
+.sb-add-cat{display:flex;align-items:center;gap:6px;width:100%;padding:7px 14px;border:none;background:transparent;color:var(--text3);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all 0.12s;}
+.sb-add-cat:hover{color:var(--gold);}
+
+/* MAIN */
+.main{flex:1;padding:24px 28px;overflow:auto;}
+.page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.page-title{font-size:20px;font-weight:700;color:var(--text);}
+.page-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.search-bar{flex:1;min-width:180px;padding:8px 12px;font-size:13px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface);color:var(--text);font-family:var(--sans);outline:none;transition:border-color 0.15s;}
+.search-bar:focus{border-color:var(--gold);}
+.filter-select{padding:7px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface);color:var(--text);font-family:var(--sans);outline:none;cursor:pointer;}
+.filter-select:focus{border-color:var(--gold);}
+
+/* GRID TABLE */
+.grid-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--rl);background:var(--surface);}
+.grid-table{width:100%;border-collapse:collapse;min-width:600px;}
+.grid-table thead tr{background:var(--surface2);border-bottom:2px solid var(--border2);}
+.grid-table th{padding:10px 12px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-family:var(--mono);white-space:nowrap;position:relative;}
+.grid-table th.sortable{cursor:pointer;user-select:none;}
+.grid-table th.sortable:hover{color:var(--text);}
+.sort-arrow{margin-left:4px;opacity:0.5;}
+.th-actions{width:80px;text-align:center;}
+.th-col-menu{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;cursor:pointer;color:var(--text3);font-size:12px;vertical-align:middle;margin-left:4px;}
+.th-col-menu:hover{background:var(--surface3);color:var(--text);}
+.grid-table tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s;}
+.grid-table tbody tr:last-child{border-bottom:none;}
+.grid-table tbody tr:hover{background:var(--surface2);}
+.grid-table tbody tr.editing{background:#fffcf4;}
+.grid-table td{padding:9px 12px;font-size:13px;color:var(--text);vertical-align:middle;max-width:220px;}
+.cell-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;}
+.cell-secret{font-family:var(--mono);cursor:pointer;filter:blur(3.5px);transition:filter 0.2s;font-size:12px;}
+.cell-secret:hover,.cell-secret.revealed{filter:none;}
+.cell-date{font-family:var(--mono);font-size:12px;}
+.cell-expired{color:var(--red);font-weight:600;}
+.cell-expiring{color:var(--amber);font-weight:600;}
+.cell-ok{color:var(--green);}
+.badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;font-family:var(--mono);display:inline-block;}
+.b-green{background:var(--green-l);color:var(--green);}
+.b-blue{background:var(--blue-l);color:var(--blue);}
+.b-amber{background:var(--amber-l);color:var(--amber);}
+.b-red{background:var(--red-l);color:var(--red);}
+.b-gray{background:var(--surface3);color:var(--text3);}
+.row-actions{display:flex;gap:4px;justify-content:center;}
+.icon-btn{width:28px;height:28px;border:none;background:transparent;cursor:pointer;border-radius:5px;font-size:13px;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all 0.12s;}
+.icon-btn:hover{background:var(--surface3);color:var(--text);}
+.icon-btn.save-btn{color:var(--green);}
+.icon-btn.save-btn:hover{background:var(--green-l);}
+.icon-btn.cancel-btn:hover{background:var(--surface3);}
+.icon-btn.del-btn:hover{background:var(--red-l);color:var(--red);}
+
+/* INLINE EDIT */
+.edit-cell-input{width:100%;padding:5px 8px;font-size:12px;border:1.5px solid var(--gold);border-radius:4px;background:#fff;color:var(--text);font-family:var(--mono);outline:none;min-width:80px;}
+.edit-cell-select{width:100%;padding:5px 8px;font-size:12px;border:1.5px solid var(--gold);border-radius:4px;background:#fff;color:var(--text);font-family:var(--sans);outline:none;}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:50px 20px;color:var(--text3);}
+.empty-state .big{font-size:36px;margin-bottom:10px;}
+.empty-state p{font-size:13px;line-height:1.6;}
+
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.35);display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:var(--rl);padding:26px 28px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.18);}
+.modal h2{font-size:18px;font-weight:700;margin-bottom:18px;}
+.fg{margin-bottom:13px;}
+.fg label{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:4px;font-family:var(--mono);}
+.fg input,.fg select,.fg textarea{width:100%;padding:8px 11px;font-size:13px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:var(--mono);outline:none;transition:border-color 0.15s;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--gold);}
+.fg textarea{resize:vertical;min-height:70px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);}
+.btn{padding:9px 20px;font-size:13px;font-weight:600;border-radius:var(--r);cursor:pointer;font-family:var(--sans);transition:all 0.15s;border:none;}
+.btn-primary{background:var(--gold);color:#fff;}
+.btn-primary:hover{background:var(--gold-d);}
+.btn-cancel{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.btn-cancel:hover{background:var(--surface2);}
+.btn-danger{background:var(--red);color:#fff;}
+.col-list{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;margin-bottom:14px;}
+.col-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border-radius:var(--r);font-size:13px;}
+.col-item input[type=checkbox]{accent-color:var(--gold);width:15px;height:15px;cursor:pointer;}
+.col-item-label{flex:1;font-family:var(--mono);}
+.col-item-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:2px;}
+.col-item-del:hover{color:var(--red);}
+.add-col-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;}
+.add-col-input{flex:1;min-width:120px;padding:8px 11px;font-size:12px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:var(--mono);outline:none;}
+.add-col-input:focus{border-color:var(--gold);}
+.add-col-type{padding:8px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:var(--sans);outline:none;cursor:pointer;}
+
+/* SETTINGS */
+.settings-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:20px 22px;margin-bottom:14px;}
+.settings-card h3{font-size:14px;font-weight:600;margin-bottom:14px;}
+.member-list{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
+.member-chip{display:flex;align-items:center;gap:5px;padding:5px 11px;background:var(--green-l);border:1px solid rgba(26,122,74,0.2);border-radius:20px;font-size:12px;font-weight:600;color:var(--green);}
+.member-chip button{background:none;border:none;cursor:pointer;color:var(--green);font-size:13px;padding:0;line-height:1;}
+.member-chip button:hover{color:var(--red);}
+.add-member-row{display:flex;gap:8px;}
+.add-member-input{flex:1;padding:7px 11px;font-size:13px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:var(--sans);outline:none;}
+.add-member-input:focus{border-color:var(--gold);}
+
+/* ADD ROW */
+.add-row-btn{display:flex;align-items:center;gap:6px;padding:9px 14px;font-size:12px;font-weight:600;color:var(--text3);background:transparent;border:none;cursor:pointer;font-family:var(--sans);transition:color 0.15s;width:100%;}
+.add-row-btn:hover{color:var(--gold);}
+
+/* CONTEXT MENU */
+.ctx-menu{position:fixed;z-index:999;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:6px 0;min-width:160px;display:none;}
+.ctx-menu.open{display:block;}
+.ctx-item{padding:8px 14px;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--text2);white-space:nowrap;display:flex;align-items:center;gap:8px;}
+.ctx-item:hover{background:var(--surface2);color:var(--text);}
+.ctx-item.danger{color:var(--red);}
+.ctx-item.danger:hover{background:var(--red-l);}
+.ctx-sep{height:1px;background:var(--border);margin:4px 0;}
+
+/* ── AI SCAN ── */
+.scan-modal{max-width:600px;}
+.scan-drop-zone{
+  border:2px dashed var(--border2);border-radius:var(--rl);
+  padding:40px 24px;text-align:center;cursor:pointer;
+  transition:all 0.2s;background:var(--bg);position:relative;
+  margin-bottom:16px;
+}
+.scan-drop-zone:hover,.scan-drop-zone.drag-over{border-color:var(--gold);background:var(--gold-l);}
+.scan-drop-icon{font-size:36px;margin-bottom:10px;}
+.scan-drop-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.scan-drop-sub{font-size:12px;color:var(--text3);line-height:1.5;}
+.scan-drop-sub span{color:var(--gold);font-weight:600;}
+.scan-file-input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.scan-preview{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:var(--r);margin-bottom:14px;border:1px solid var(--border);}
+.scan-preview-thumb{width:48px;height:48px;object-fit:cover;border-radius:4px;flex-shrink:0;border:1px solid var(--border);}
+.scan-preview-pdf{width:48px;height:48px;background:var(--red-l);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid rgba(176,42,26,0.2);}
+.scan-preview-info{flex:1;min-width:0;}
+.scan-preview-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.scan-preview-size{font-size:11px;color:var(--text3);font-family:var(--mono);}
+.scan-preview-clear{background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:4px;}
+.scan-preview-clear:hover{color:var(--red);}
+.scan-doctype-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.scan-type-chip{
+  padding:6px 14px;font-size:12px;font-weight:600;border-radius:20px;cursor:pointer;
+  border:1.5px solid var(--border);background:transparent;color:var(--text2);
+  font-family:var(--sans);transition:all 0.12s;
+}
+.scan-type-chip:hover{border-color:var(--gold);color:var(--gold);}
+.scan-type-chip.active{background:var(--gold);border-color:var(--gold);color:#fff;}
+.scan-status{
+  display:flex;align-items:center;gap:10px;padding:12px 14px;
+  border-radius:var(--r);font-size:13px;font-weight:500;margin-bottom:14px;
+}
+.scan-status.scanning{background:var(--blue-l);color:var(--blue);}
+.scan-status.success{background:var(--green-l);color:var(--green);}
+.scan-status.error{background:var(--red-l);color:var(--red);}
+.scan-spinner{width:16px;height:16px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.scan-results{background:var(--surface2);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;margin-bottom:14px;}
+.scan-results-head{padding:10px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-family:var(--mono);border-bottom:1px solid var(--border);background:var(--surface3);}
+.scan-field-row{display:grid;grid-template-columns:140px 1fr;gap:0;border-bottom:1px solid var(--border);}
+.scan-field-row:last-child{border-bottom:none;}
+.scan-field-key{padding:9px 12px;font-size:11px;font-weight:600;color:var(--text3);font-family:var(--mono);background:var(--surface2);display:flex;align-items:center;}
+.scan-field-val{padding:7px 10px;font-size:13px;color:var(--text);}
+.scan-field-input{width:100%;padding:5px 8px;font-size:12px;border:1.5px solid var(--gold);border-radius:4px;background:#fff;color:var(--text);font-family:var(--mono);outline:none;}
+.scan-no-match{font-size:12px;color:var(--text3);font-style:italic;padding:10px 12px;}
+.scan-tab-sel{padding:7px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface);color:var(--text);font-family:var(--sans);outline:none;cursor:pointer;margin-bottom:14px;width:100%;}
+.scan-tab-sel:focus{border-color:var(--gold);}
+/* API KEY BANNER */
+.api-key-banner{
+  background:linear-gradient(135deg,#fffbe6,#fff8d6);
+  border:1.5px solid var(--amber);border-radius:var(--r);
+  padding:12px 16px;margin-bottom:16px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.api-key-banner.ok{background:var(--green-l);border-color:rgba(26,122,74,0.35);}
+.api-key-label{font-size:12px;font-weight:600;color:var(--amber);flex-shrink:0;white-space:nowrap;}
+.api-key-banner.ok .api-key-label{color:var(--green);}
+.api-key-input-wrap{flex:1;min-width:160px;display:flex;gap:6px;}
+.api-key-inp{flex:1;padding:6px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:4px;background:#fff;color:var(--text);font-family:var(--mono);outline:none;}
+.api-key-inp:focus{border-color:var(--gold);}
+.api-key-save-btn{padding:6px 12px;font-size:11px;font-weight:600;background:var(--gold);color:#fff;border:none;border-radius:4px;cursor:pointer;white-space:nowrap;}
+.api-key-save-btn:hover{background:var(--gold-d);}
+.api-key-clear-btn{padding:6px 10px;font-size:11px;font-weight:600;background:transparent;color:var(--text3);border:1px solid var(--border);border-radius:4px;cursor:pointer;}
+.api-key-clear-btn:hover{background:var(--red-l);color:var(--red);border-color:var(--red);}
+/* PERSON ROW IN SCAN */
+.scan-person-row{display:flex;gap:8px;align-items:center;margin-bottom:14px;}
+.scan-person-row label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-family:var(--mono);flex-shrink:0;min-width:55px;}
+.scan-person-sel{flex:1;padding:7px 10px;font-size:13px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface);color:var(--text);font-family:var(--sans);outline:none;cursor:pointer;}
+.scan-person-sel:focus{border-color:var(--gold);}
+
+
+/* SCAN CONFIRM STEP */
+.scan-confirm-section{margin-bottom:16px;}
+.scan-confirm-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-family:var(--mono);margin-bottom:8px;padding:0 2px;}
+.scan-field-row.new-col{background:#fffbf0;border-left:3px solid var(--amber);}
+.scan-field-row.new-col .scan-field-key{background:#fffbf0;}
+.new-col-badge{display:inline-block;font-size:9px;font-weight:700;background:var(--amber);color:#fff;border-radius:3px;padding:1px 5px;margin-left:5px;vertical-align:middle;text-transform:uppercase;letter-spacing:0.04em;}
+.existing-col-badge{display:inline-block;font-size:9px;font-weight:700;background:var(--green-l);color:var(--green);border-radius:3px;padding:1px 5px;margin-left:5px;vertical-align:middle;text-transform:uppercase;letter-spacing:0.04em;border:1px solid rgba(26,122,74,0.2);}
+.scan-confirm-summary{font-size:12px;color:var(--text2);padding:10px 12px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--border);margin-bottom:14px;line-height:1.7;}
+.scan-confirm-summary strong{color:var(--text);}
+.scan-new-cols-list{margin-top:6px;}
+.scan-new-col-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fffbf0;border:1px solid rgba(196,122,26,0.25);border-radius:var(--r);margin-bottom:5px;font-size:12px;}
+.scan-new-col-item .col-name{font-weight:600;font-family:var(--mono);color:var(--text);flex:1;}
+.scan-new-col-item .col-type-sel{padding:3px 7px;font-size:11px;border:1px solid var(--border);border-radius:4px;background:#fff;color:var(--text);font-family:var(--sans);outline:none;cursor:pointer;}
+.scan-new-col-item .col-skip-btn{background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;color:var(--text3);}
+.scan-new-col-item .col-skip-btn:hover{background:var(--red-l);color:var(--red);border-color:var(--red);}
+.scan-new-col-item .col-skip-btn.skipped{background:var(--red-l);color:var(--red);border-color:var(--red);}
+
+
+/* ── MOBILE BOTTOM NAV ── */
+.mobile-nav{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;
+  background:var(--surface);border-top:1px solid var(--border);
+  display:none;grid-template-columns:repeat(5,1fr);
+  padding:6px 0 max(6px,env(safe-area-inset-bottom));
+}
+.mnav-btn{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  background:none;border:none;cursor:pointer;padding:6px 4px;
+  font-family:var(--sans);color:var(--text3);font-size:10px;font-weight:500;
+  transition:color 0.12s;
+}
+.mnav-btn.active{color:var(--gold);}
+.mnav-btn .mico{font-size:20px;line-height:1;}
+.mnav-scan-fab{
+  position:fixed;bottom:70px;right:16px;z-index:299;
+  width:52px;height:52px;border-radius:50%;
+  background:var(--blue);color:#fff;border:none;
+  font-size:22px;cursor:pointer;display:none;
+  box-shadow:0 4px 16px rgba(30,95,166,0.35);
+  align-items:center;justify-content:center;
+  transition:transform 0.15s;
+}
+.mnav-scan-fab:active{transform:scale(0.93);}
+
+/* ── MOBILE FILE PICKER SHEET ── */
+.mobile-pick-sheet{
+  position:fixed;bottom:0;left:0;right:0;z-index:600;
+  background:var(--surface);border-radius:20px 20px 0 0;
+  padding:16px 16px max(20px,env(safe-area-inset-bottom));
+  box-shadow:0 -8px 40px rgba(0,0,0,0.18);
+  transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  display:none;
+}
+.mobile-pick-sheet.open{transform:translateY(0);}
+.mps-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px;}
+.mps-title{font-size:15px;font-weight:700;margin-bottom:14px;text-align:center;}
+.mps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
+.mps-btn{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:16px 8px;border-radius:var(--rl);border:1.5px solid var(--border);
+  background:var(--surface2);cursor:pointer;font-family:var(--sans);
+  font-size:11px;font-weight:600;color:var(--text2);text-align:center;
+  transition:all 0.12s;
+}
+.mps-btn:active{background:var(--gold-l);border-color:var(--gold);color:var(--gold);}
+.mps-btn .mps-ico{font-size:28px;line-height:1;}
+.mps-btn input[type=file]{display:none;}
+.mps-cancel{width:100%;padding:13px;font-size:14px;font-weight:600;
+  background:var(--surface3);border:none;border-radius:var(--r);
+  cursor:pointer;font-family:var(--sans);color:var(--text2);margin-top:4px;}
+.mps-cancel:active{background:var(--border2);}
+.mps-overlay{position:fixed;inset:0;z-index:599;background:rgba(0,0,0,0.3);display:none;}
+.mps-overlay.open{display:block;}
+
+/* ── 2FA STYLES ── */
+.twofa-box{margin-top:14px;border-top:1px solid var(--border);padding-top:16px;}
+.twofa-title{font-size:12px;font-weight:600;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;}
+.twofa-methods{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.twofa-method-btn{flex:1;min-width:100px;padding:10px 8px;border:1.5px solid var(--border);border-radius:var(--r);background:transparent;cursor:pointer;font-family:var(--sans);font-size:12px;font-weight:600;color:var(--text2);text-align:center;transition:all 0.12s;}
+.twofa-method-btn:hover{border-color:var(--gold);color:var(--gold);}
+.twofa-method-btn.active{border-color:var(--gold);background:var(--gold-l);color:var(--gold);}
+.twofa-input-row{display:flex;gap:8px;margin-bottom:10px;}
+.twofa-contact-input{flex:1;padding:9px 12px;font-size:14px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:var(--mono);outline:none;transition:border-color 0.15s;}
+.twofa-contact-input:focus{border-color:var(--gold);}
+.twofa-send-btn{padding:9px 16px;font-size:13px;font-weight:600;background:var(--gold);color:#fff;border:none;border-radius:var(--r);cursor:pointer;white-space:nowrap;transition:opacity 0.15s;}
+.twofa-send-btn:hover{opacity:0.88;}
+.twofa-send-btn:disabled{opacity:0.5;cursor:not-allowed;}
+.otp-inputs{display:flex;gap:8px;justify-content:center;margin:14px 0;}
+.otp-digit{width:44px;height:52px;text-align:center;font-size:22px;font-weight:700;font-family:var(--mono);border:2px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none;transition:border-color 0.15s;}
+.otp-digit:focus{border-color:var(--gold);}
+.twofa-status{font-size:12px;text-align:center;margin-bottom:8px;min-height:18px;}
+.twofa-status.ok{color:var(--green);}
+.twofa-status.err{color:var(--red);}
+.twofa-status.info{color:var(--blue);}
+.twofa-skip{font-size:11px;color:var(--text3);text-align:center;margin-top:8px;cursor:pointer;text-decoration:underline;}
+.twofa-skip:hover{color:var(--text);}
+/* Settings 2FA card */
+.twofa-settings-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.twofa-settings-row:last-child{border-bottom:none;}
+.twofa-toggle{position:relative;width:40px;height:22px;flex-shrink:0;}
+.twofa-toggle input{opacity:0;width:0;height:0;}
+.twofa-slider{position:absolute;inset:0;background:var(--border2);border-radius:11px;cursor:pointer;transition:background 0.2s;}
+.twofa-toggle input:checked+.twofa-slider{background:var(--gold);}
+.twofa-slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform 0.2s;}
+.twofa-toggle input:checked+.twofa-slider:before{transform:translateX(18px);}
+
+/* INSTALL BANNER */
+.install-banner{
+  display:none;align-items:center;gap:10px;
+  background:linear-gradient(135deg,#1e5fa6,#1a4a85);
+  color:#fff;padding:10px 16px;
+  position:sticky;top:53px;z-index:150;
+  flex-wrap:wrap;
+}
+.install-banner-text{flex:1;font-size:13px;font-weight:500;min-width:160px;}
+.install-banner-text strong{display:block;font-size:14px;margin-bottom:1px;}
+.install-banner-actions{display:flex;gap:8px;align-items:center;}
+.install-btn{padding:7px 16px;font-size:12px;font-weight:700;
+  background:#fff;color:#1e5fa6;border:none;border-radius:20px;cursor:pointer;}
+.install-dismiss{background:none;border:none;color:rgba(255,255,255,0.7);
+  font-size:18px;cursor:pointer;padding:4px;}
+.install-fallback{display:none;background:#fff;color:var(--text);
+  border-radius:var(--r);padding:12px;margin:8px 16px;font-size:12px;
+  border:1px solid var(--border);line-height:1.7;}
+/* iOS specific instructions */
+.ios-hint{display:none;}
+
+@media(max-width:700px){
+  .sidebar{display:none;}
+  .main{padding:12px 14px 80px;}
+  .top-bar{padding:10px 14px;}
+  .top-actions .tbtn:not(.gold):not(.red){display:none;}
+  .top-actions{gap:6px;}
+  .tbtn{padding:7px 12px;font-size:12px;}
+  .mobile-nav{display:grid;}
+  .mnav-scan-fab{display:flex;}
+  .modal{padding:20px 16px;border-radius:16px 16px 0 0;max-height:92vh;
+    position:fixed;bottom:0;left:0;right:0;width:100%;max-width:100%;}
+  .modal-overlay{align-items:flex-end;padding:0;}
+  .scan-modal{max-width:100%;}
+  .two-col{grid-template-columns:1fr;}
+  .scan-doctype-row{gap:6px;}
+  .scan-type-chip{padding:5px 10px;font-size:11px;}
+  .scan-drop-zone{padding:24px 16px;}
+  .scan-drop-icon{font-size:28px;}
+  .grid-table{font-size:12px;}
+  .grid-table th{padding:8px 8px;font-size:9px;}
+  .grid-table td{padding:7px 8px;font-size:12px;}
+  .page-head{margin-bottom:12px;}
+  .page-title{font-size:17px;}
+  .toolbar{gap:6px;}
+  .search-bar{font-size:13px;padding:8px 10px;}
+  /* stack new-col items on mobile */
+  .scan-new-col-item{flex-wrap:wrap;gap:6px;}
+  .scan-new-col-item .col-name input{width:100%!important;}
+}
+@media(min-width:701px){
+  .mobile-nav,.mnav-scan-fab,.mobile-pick-sheet,.mps-overlay{display:none!important;}
+}
+
+</style>
+</head>
+<body>
+
+<!-- LOCK -->
+<div id="lock-screen">
+  <div class="lock-box">
+    <div class="lock-icon">🔐</div>
+    <div class="lock-title" id="lock-title">Family Vault</div>
+    <div class="lock-sub" id="lock-sub">Enter your master password to access the vault.</div>
+
+    <!-- Step 1: Password -->
+    <div id="lock-step-pw">
+      <input type="password" class="lock-input" id="lock-pw" placeholder="Password" onkeydown="if(event.key==='Enter')lockAction()"/>
+      <input type="password" class="lock-input" id="lock-pw2" placeholder="Confirm password" style="display:none" onkeydown="if(event.key==='Enter')lockAction()"/>
+      <button class="lock-btn" id="lock-action-btn" onclick="lockAction()">Unlock Vault</button>
+      <div class="lock-err" id="lock-err"></div>
+    </div>
+
+    <!-- Step 2: 2FA OTP (shown after password verified) -->
+    <div id="lock-step-2fa" style="display:none">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6" id="twofa-sent-msg"></div>
+      <div class="otp-inputs">
+        <input class="otp-digit" maxlength="1" id="otp0" oninput="otpInput(this,0)" onkeydown="otpKey(event,0)" inputmode="numeric"/>
+        <input class="otp-digit" maxlength="1" id="otp1" oninput="otpInput(this,1)" onkeydown="otpKey(event,1)" inputmode="numeric"/>
+        <input class="otp-digit" maxlength="1" id="otp2" oninput="otpInput(this,2)" onkeydown="otpKey(event,2)" inputmode="numeric"/>
+        <input class="otp-digit" maxlength="1" id="otp3" oninput="otpInput(this,3)" onkeydown="otpKey(event,3)" inputmode="numeric"/>
+        <input class="otp-digit" maxlength="1" id="otp4" oninput="otpInput(this,4)" onkeydown="otpKey(event,4)" inputmode="numeric"/>
+        <input class="otp-digit" maxlength="1" id="otp5" oninput="otpInput(this,5)" onkeydown="otpKey(event,5)" inputmode="numeric"/>
+      </div>
+      <div class="twofa-status" id="otp-status"></div>
+      <button class="lock-btn" onclick="verifyOTP()">Verify Code</button>
+      <div class="twofa-skip" onclick="resendOTP()">Code not working? (codes refresh every 30s)</div>
+      <div class="twofa-skip" style="margin-top:4px" onclick="skip2FA()">Skip 2FA (use password only)</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="col-modal">
+  <div class="modal">
+    <h2 id="col-modal-title">Manage Columns</h2>
+    <div id="col-modal-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-cancel" onclick="closeModal('col-modal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="add-cat-modal">
+  <div class="modal" style="max-width:400px">
+    <h2>Add Category</h2>
+    <div class="fg"><label>Category Name</label><input type="text" id="new-cat-name" placeholder="e.g. Subscriptions, Safe Deposit..."/></div>
+    <div class="fg"><label>Icon (emoji)</label><input type="text" id="new-cat-icon" placeholder="📁" maxlength="4"/></div>
+    <div class="modal-foot">
+      <button class="btn btn-cancel" onclick="closeModal('add-cat-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewCategory()">Add Category</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="del-modal">
+  <div class="modal" style="max-width:360px">
+    <h2>Delete Row?</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:18px">This cannot be undone.</p>
+    <div class="modal-foot">
+      <button class="btn btn-cancel" onclick="closeModal('del-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="del-col-modal">
+  <div class="modal" style="max-width:360px">
+    <h2>Remove Column?</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:18px">Data in this column will be lost. Cannot be undone.</p>
+    <div class="modal-foot">
+      <button class="btn btn-cancel" onclick="closeModal('del-col-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelCol()">Remove Column</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI SCAN MODAL -->
+<div class="modal-overlay" id="scan-modal">
+  <div class="modal scan-modal">
+    <h2>📷 Scan Document with AI</h2>
+
+    <!-- API Key banner -->
+    <div class="api-key-banner" id="api-key-banner">
+      <span class="api-key-label" id="api-key-label">⚠ API Key needed</span>
+      <div class="api-key-input-wrap">
+        <input class="api-key-inp" type="password" id="api-key-inp" placeholder="sk-ant-api03-…" autocomplete="off"/>
+        <button class="api-key-save-btn" onclick="saveApiKey()">Save</button>
+        <button class="api-key-clear-btn" id="api-key-clear-btn" onclick="clearApiKey()" style="display:none">Clear</button>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:14px;line-height:1.6">
+      Your key is stored locally on this device only and never sent anywhere except Anthropic's API.
+      Get one free at <a href="https://console.anthropic.com" target="_blank" style="color:var(--gold)">console.anthropic.com</a>
+    </p>
+
+    <!-- Save to + Person row -->
+    <div class="two-col" style="margin-bottom:12px">
+      <div class="fg" style="margin:0">
+        <label>Save to Section</label>
+        <select class="scan-tab-sel" id="scan-target-tab" onchange="onScanTabChange()">
+          <option value="docs">🪪 Documents &amp; IDs</option>
+          <option value="bank">🏦 Bank &amp; Finance</option>
+          <option value="insurance">🛡️ Insurance</option>
+          <option value="medical">🏥 Medical</option>
+          <option value="property">🏠 Property</option>
+          <option value="vehicles">🚗 Vehicles &amp; Cars</option>
+          <option value="notes">📝 Notes</option>
+        </select>
+      </div>
+      <div class="fg" style="margin:0">
+        <label>Person / Owner</label>
+        <input class="scan-person-sel" type="text" id="scan-person" placeholder="Type or select…" list="scan-person-list"/>
+        <datalist id="scan-person-list"></datalist>
+      </div>
+    </div>
+
+    <!-- Document type hints -->
+    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">Document Type (helps AI)</div>
+    <div class="scan-doctype-row" id="scan-type-chips"></div>
+
+    <!-- Drop zone (desktop) -->
+    <div class="scan-drop-zone" id="scan-drop-zone"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="onScanDrop(event)">
+      <input class="scan-file-input" type="file" id="scan-file-input" accept="image/*,.pdf" onchange="onScanFileSelect(event)"/>
+      <div class="scan-drop-icon">📂</div>
+      <div class="scan-drop-title" id="drop-zone-title">Tap to choose file</div>
+      <div class="scan-drop-sub">Supports <span>JPG, PNG, HEIC, PDF</span><br/>From Downloads, WhatsApp, FastScan or Camera</div>
+    </div>
+
+    <!-- Preview -->
+    <div id="scan-preview-area"></div>
+
+    <!-- Status -->
+    <div id="scan-status-area"></div>
+
+    <!-- Results (editable before saving) -->
+    <div id="scan-results-area"></div>
+
+    <div class="modal-foot" id="scan-modal-foot">
+      <button class="btn btn-cancel" onclick="closeModal('scan-modal');resetScan()">Cancel</button>
+      <button class="btn btn-primary" id="scan-go-btn" onclick="runScan()" style="display:none">🔍 Scan Document</button>
+      <button class="btn btn-primary" id="scan-save-btn" onclick="saveScanResults()" style="display:none">✓ Add to Vault</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- SCAN CONFIRM COLUMNS MODAL -->
+<div class="modal-overlay" id="scan-confirm-modal">
+  <div class="modal" style="max-width:600px">
+    <h2>✅ Confirm & Save to Vault</h2>
+    <div id="scan-confirm-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-cancel" onclick="closeModal('scan-confirm-modal')">Back</button>
+      <button class="btn btn-primary" onclick="doFinalSave()">💾 Save to Vault</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="top-bar">
+    <div class="app-logo"><div class="app-logo-icon">🔐</div>Family Vault</div>
+    <div class="top-actions">
+      <input type="file" id="import-file" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)"/>
+      <input type="file" id="lp-csv-file" accept=".csv" style="display:none" onchange="importLastPassCSV(event)"/>
+      <button class="tbtn" onclick="document.getElementById('import-file').click()">⬆ Import</button>
+      <button class="tbtn" onclick="openScanModal()" style="border-color:var(--blue);color:var(--blue)">📷 Scan Doc</button>
+      <button class="tbtn gold" onclick="exportExcel()">⬇ Export Excel</button>
+      <button class="tbtn red" onclick="lockVault()">🔒 Lock</button>
+    </div>
+  </div>
+
+  <!-- INSTALL BANNER -->
+  <div class="install-banner" id="install-banner">
+    <div class="install-banner-text">
+      <strong>📱 Add Family Vault to Home Screen</strong>
+      Open instantly like an app — works offline too
+    </div>
+    <div class="install-banner-actions">
+      <button class="install-btn" onclick="triggerInstall()">Install App</button>
+      <button class="install-dismiss" onclick="dismissInstall()">✕</button>
+    </div>
+  </div>
+  <div class="install-fallback" id="install-fallback">
+    <strong>To install on your device:</strong><br/>
+    <b>Android Chrome:</b> Tap ⋮ menu → <em>Add to Home screen</em><br/>
+    <b>iPhone Safari:</b> Tap Share (□↑) → <em>Add to Home Screen</em><br/>
+    <b>Key:</b> Must be opened from Google Drive or a website — not a local file
+  </div>
+  <div class="layout">
+    <div class="sidebar" id="sidebar"></div>
+    <div class="main" id="main-content"></div>
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div class="ctx-menu" id="ctx-menu"></div>
+
+<script>
+// ══ STATE ══
+var VAULT_KEY='fvg_data_v2';
+var PW_KEY='fvg_pw_v2';
+var ACTIVE_TAB='docs';
+var SEARCH_Q='';
+var MEMBER_FILTER='all';
+var SORT_COL='';
+var SORT_DIR=1;
+var _delId=null;_delTab=null;
+var _delColTab=null;_delColKey=null;
+var _editRow={};  // {tab,id} currently in edit mode
+var _lockMode='unlock';
+
+var DATA={
+  members:['Shailesh Koppikar','Anu Kumble','Ria Koppikar','Sunder Koppikar','Nalini Koppikar'],
+  customCategories:[],
+  docs:[],bank:[],insurance:[],passwords:[],medical:[],property:[],vehicles:[],notes:[]
+};
+
+// Column definitions per tab (key, label, type, secret, expiry, opts, hidden)
+var SCHEMAS={
+  docs:[
+    {k:'docType',l:'Type',type:'select',opts:['Passport','Driver License','SSN/ITIN','Aadhaar','PAN Card','Voter ID','Birth Certificate','Green Card','Visa','Other']},
+    {k:'member',l:'Person',type:'member'},
+    {k:'country',l:'Country',type:'country'},
+    {k:'docNumber',l:'Doc Number',type:'text',secret:true},
+    {k:'issueDate',l:'Issue Date',type:'date'},
+    {k:'expiryDate',l:'Expiry Date',type:'date',expiry:true},
+    {k:'issuedBy',l:'Issued By',type:'text'},
+    {k:'placeOfIssue',l:'Place of Issue',type:'text'},
+    {k:'notes',l:'Notes',type:'text'},
+  ],
+  bank:[
+    {k:'member',l:'Person',type:'member'},
+    {k:'country',l:'Country',type:'country'},
+    {k:'accountType',l:'Type',type:'select',opts:['Checking','Savings','Joint','Investment','Brokerage','Retirement/IRA/401k','Credit Card','Fixed Deposit','NRE Account','NRO Account','Other']},
+    {k:'accountNumber',l:'Account #',type:'text',secret:true},
+    {k:'routingNumber',l:'Routing/IFSC',type:'text',secret:true},
+    {k:'customerId',l:'Customer ID',type:'text',secret:true},
+    {k:'website',l:'URL / Login',type:'text'},
+    {k:'username',l:'Username',type:'text'},
+    {k:'password',l:'Password',type:'text',secret:true},
+    {k:'phone',l:'Bank Phone',type:'text'},
+    {k:'notes',l:'Notes',type:'text'},
+  ],
+  insurance:[
+    {k:'member',l:'Insured',type:'member'},
+    {k:'country',l:'Country',type:'country'},
+    {k:'policyType',l:'Type',type:'select',opts:['Term Life','Whole Life','Universal Life','Endowment','Health','Auto','Home/Property','Disability','Other']},
+    {k:'policyNumber',l:'Policy #',type:'text',secret:true},
+    {k:'coverage',l:'Coverage',type:'text'},
+    {k:'premium',l:'Premium',type:'text'},
+    {k:'beneficiary',l:'Beneficiary',type:'text'},
+    {k:'agentName',l:'Agent',type:'text'},
+    {k:'agentPhone',l:'Agent Phone',type:'text'},
+    {k:'expiryDate',l:'Renewal Date',type:'date',expiry:true},
+    {k:'notes',l:'Notes',type:'text'},
+  ],
+  passwords:[
+    {k:'member',l:'Person',type:'member'},
+    {k:'category',l:'Category',type:'select',opts:['Email','Banking','Government','Healthcare','Insurance','Investment','Social Media','Shopping','Streaming','Utilities','Work','Other']},
+    {k:'website',l:'URL',type:'text'},
+    {k:'username',l:'Username',type:'text'},
+    {k:'password',l:'Password',type:'text',secret:true},
+    {k:'pin',l:'PIN',type:'text',secret:true},
+    {k:'twoFactor',l:'2FA',type:'text'},
+    {k:'phone',l:'Linked Phone',type:'text'},
+    {k:'notes',l:'Notes',type:'text'},
+  ],
+  medical:[
+    {k:'member',l:'Person',type:'member'},
+    {k:'category',l:'Category',type:'select',opts:['Blood Type','Doctor','Hospital','Dentist','Specialist','Medication','Allergy','Insurance Card','Emergency Contact','Vaccination','Other']},
+    {k:'detail1',l:'Doctor/Detail',type:'text'},
+    {k:'detail2',l:'Phone',type:'text'},
+    {k:'detail3',l:'Address',type:'text'},
+    {k:'policyNumber',l:'Policy #',type:'text'},
+    {k:'expiryDate',l:'Expiry Date',type:'date',expiry:true},
+    {k:'notes',l:'Notes',type:'text'},
+  ],
+  property:[
+    {k:'member',l:'Owner',type:'member'},
+    {k:'country',l:'Country',type:'country'},
+    {k:'category',l:'Category',type:'select',opts:['Home/Condo','Rental Property','Land','Other']},
+    {k:'address',l:'Address',type:'text'},
+    {k:'purchaseDate',l:'Purchase Date',type:'date'},
+    {k:'purchasePrice',l:'Purchase Price',type:'text'},
+    {k:'loanBank',l:'Mortgage Bank',type:'text'},
+    {k:'loanAccount',l:'Loan Account #',type:'text',secret:true},
+    {k:'loanPending',l:'Loan Pending',type:'text'},
+    {k:'insuranceProvider',l:'Insurance',type:'text'},
+    {k:'insurancePolicy',l:'Insurance Policy #',type:'text',secret:true},
+    {k:'expiryDate',l:'Renewal Date',type:'date',expiry:true},
+    {k:'notes',l:'Notes',type:'text'},
+  ],
+  vehicles:[
+    {k:'member',l:'Owner',type:'member'},
+    {k:'category',l:'Type',type:'select',opts:['Car','Truck/SUV','Motorcycle','Boat','RV','Other']},
+    {k:'make',l:'Make & Model',type:'text'},
+    {k:'color',l:'Color',type:'text'},
+    {k:'year',l:'Year',type:'text'},
+    {k:'vin',l:'VIN',type:'text',secret:true},
+    {k:'licensePlate',l:'License Plate',type:'text'},
+    {k:'registrationExp',l:'Reg Expiry',type:'date',expiry:true},
+    {k:'loanBank',l:'Loan Bank',type:'text'},
+    {k:'loanAccount',l:'Loan Account #',type:'text',secret:true},
+    {k:'loanPending',l:'Loan Pending',type:'text'},
+    {k:'insuranceProvider',l:'Insurance',type:'text'},
+    {k:'insurancePolicy',l:'Ins Policy #',type:'text',secret:true},
+    {k:'notes',l:'Notes',type:'text'},
+  ],
+  notes:[
+    {k:'member',l:'Person',type:'member'},
+    {k:'category',l:'Category',type:'select',opts:['Legal/Will','Tax','Investment','Education','Employment','Travel','Miscellaneous']},
+    {k:'notes',l:'Content',type:'text'},
+  ],
+};
+
+// hidden columns per tab (stored in DATA.hiddenCols)
+// custom columns per tab (stored in DATA.customCols)
+
+var TAB_META={
+  docs:   {label:'Documents & IDs',icon:'🪪',nameLabel:'Document Name'},
+  bank:   {label:'Bank & Finance',icon:'🏦',nameLabel:'Bank Name'},
+  insurance:{label:'Insurance',icon:'🛡️',nameLabel:'Provider'},
+  passwords:{label:'Passwords & Logins',icon:'🔑',nameLabel:'Site / Service'},
+  medical:{label:'Medical',icon:'🏥',nameLabel:'Title'},
+  property:{label:'Property',icon:'🏠',nameLabel:'Property Name'},
+  vehicles:{label:'Vehicles & Cars',icon:'🚗',nameLabel:'Vehicle Name'},
+  notes:  {label:'Notes & Other',icon:'📝',nameLabel:'Title'},
+};
+
+// ══ PASSWORD ══
+function hashPw(pw){var h=0;for(var i=0;i<pw.length;i++){h=((h<<5)-h)+pw.charCodeAt(i);h|=0;}return 'fvg_'+Math.abs(h).toString(36)+'_'+pw.length;}
+function lockAction(){if(_lockMode==='setup')doSetup();else doUnlock();}
+function doUnlock(){
+  var pw=document.getElementById('lock-pw').value;
+  var stored=localStorage.getItem(PW_KEY);
+  if(!stored)return;
+  if(hashPw(pw)!==stored){
+    document.getElementById('lock-err').textContent='Incorrect password.';
+    document.getElementById('lock-pw').value='';
+    document.getElementById('lock-pw').focus();
+    return;
+  }
+  // Password correct — check if 2FA is configured
+  check2FA();
+}
+function doSetup(){
+  var pw=document.getElementById('lock-pw').value;var pw2=document.getElementById('lock-pw2').value;
+  if(!pw||pw.length<4){document.getElementById('lock-err').textContent='Min 4 characters.';return;}
+  if(pw!==pw2){document.getElementById('lock-err').textContent='Passwords do not match.';document.getElementById('lock-pw2').value='';document.getElementById('lock-pw2').focus();return;}
+  localStorage.setItem(PW_KEY,hashPw(pw));loadData();showApp();
+}
+function showApp(){
+  document.getElementById('lock-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  renderSidebar();renderTab();
+}
+function lockVault(){
+  document.getElementById('app').style.display='none';
+  document.getElementById('lock-screen').style.display='flex';
+  document.getElementById('lock-pw').value='';
+  document.getElementById('lock-err').textContent='';
+}
+window.onload=function(){
+  var stored=localStorage.getItem(PW_KEY);
+  var hasData=localStorage.getItem(VAULT_KEY);
+  if(!stored){
+    _lockMode='setup';
+    document.getElementById('lock-title').textContent='Welcome to Family Vault';
+    document.getElementById('lock-sub').textContent='Create a master password. Write it down — there is no recovery.';
+    document.getElementById('lock-pw').placeholder='Create password (min 4 chars)';
+    document.getElementById('lock-pw2').style.display='block';
+    document.getElementById('lock-action-btn').textContent='Create Vault';
+    // If no password but there IS saved data (from a previous version), show recovery option
+    if(hasData){
+      var sub=document.getElementById('lock-sub');
+      sub.innerHTML='<span style="color:var(--amber);font-weight:600">⚠ Existing data found!</span> Your vault data is still here. Enter your previous password below, or <a href="#" onclick="emergencyExport()" style="color:var(--gold);font-weight:600">export your data first</a>.';
+      _lockMode='unlock';
+      document.getElementById('lock-pw').placeholder='Enter your password';
+      document.getElementById('lock-pw2').style.display='none';
+      document.getElementById('lock-action-btn').textContent='Unlock';
+    }
+  }
+};
+
+// Emergency export without unlocking — reads raw localStorage data
+function emergencyExport(){
+  try{
+    var raw=localStorage.getItem(VAULT_KEY);
+    if(!raw){alert('No data found in storage.');return;}
+    var d=JSON.parse(raw);
+    if(typeof XLSX==='undefined'){
+      // Fallback: download as JSON
+      var blob=new Blob([raw],{type:'application/json'});
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='FamilyVault_backup_'+new Date().toISOString().slice(0,10)+'.json';
+      a.click();
+      return;
+    }
+    // Export as Excel
+    var wb=XLSX.utils.book_new();
+    var tabs=['docs','bank','insurance','passwords','medical','property','vehicles','notes'];
+    (d.customCategories||[]).forEach(function(cat){tabs.push('cat_'+cat.id);});
+    tabs.forEach(function(tab){
+      var rows=d[tab];if(!rows||!rows.length)return;
+      var headers=Object.keys(rows[0]).filter(function(k){return k!=='id';});
+      var data=[headers].concat(rows.map(function(r){return headers.map(function(h){return r[h]||''});}));
+      var ws=XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb,ws,tab.slice(0,31));
+    });
+    XLSX.writeFile(wb,'FamilyVault_BACKUP_'+new Date().toISOString().slice(0,10)+'.xlsx');
+    alert('✅ Backup exported! Now you can set up your new password.');
+    // Reset so they can create new password after export
+    setTimeout(function(){location.reload();},500);
+  }catch(e){alert('Export failed: '+e.message);}
+}
+
+// ══ DATA ══
+function save(){
+  try{
+    localStorage.setItem(VAULT_KEY,JSON.stringify(DATA));
+  }catch(e){
+    if(e.name==='QuotaExceededError'||e.name==='NS_ERROR_DOM_QUOTA_REACHED'){
+      alert('⚠ Storage full! Your vault is running low on browser storage space.\n\nTip: Export your data to Excel to back it up, then consider removing large scanned documents to free up space.\n\nThe last scanned document was NOT saved — all other data is safe.');
+    } else {
+      alert('Save failed: '+e.message);
+    }
+  }
+}
+function loadData(){
+  try{
+    var raw=localStorage.getItem(VAULT_KEY);
+    if(raw){
+      var d=JSON.parse(raw);
+      if(d&&d.docs!==undefined){
+        // Merge saved data into DATA — saved data always wins
+        DATA=d;
+      }
+    }
+    // Patch missing fields without overwriting existing data
+    if(!DATA.members||!DATA.members.length)DATA.members=['Shailesh Koppikar','Anu Kumble','Ria Koppikar','Sunder Koppikar','Nalini Koppikar'];
+    if(!DATA.customCategories)DATA.customCategories=[];
+    if(!DATA.hiddenCols)DATA.hiddenCols={};
+    if(!DATA.customCols)DATA.customCols={};
+    if(!DATA.customScanTypes)DATA.customScanTypes={};
+    if(!DATA.attachments)DATA.attachments={};
+    // Re-register custom scan type prompts after page reload
+    Object.keys(DATA.customScanTypes||{}).forEach(function(tab){
+      (DATA.customScanTypes[tab]||[]).forEach(function(c){
+        if(!SCAN_PROMPTS[c.id]){
+          var name=c.label.replace(/^\S+\s*/,''); // strip emoji
+          SCAN_PROMPTS[c.id]='Extract all readable information from this "'+name+'" document. Return ONLY valid JSON:\n{"name":"document title or reference number","notes":"complete summary of all text and information found in this document","category":"'+name+'"}';
+        }
+      });
+    });
+    ['docs','bank','insurance','passwords','medical','property','vehicles','notes'].forEach(function(t){if(!DATA[t])DATA[t]=[];});
+    // Re-register any custom category schemas (needed after page reload)
+    (DATA.customCategories||[]).forEach(function(cat){
+      var tabKey='cat_'+cat.id;
+      if(!TAB_META[tabKey]){
+        TAB_META[tabKey]={label:cat.name,icon:cat.icon,nameLabel:cat.name+' Name'};
+      }
+      if(!DATA[tabKey])DATA[tabKey]=[];
+    });
+    // Seed Rental Unit only if it truly doesn't exist yet (never save during load)
+    seedRentalUnit();
+  }catch(e){console.error('loadData error',e);}
+}
+function seedRentalUnit(){
+  // Always register the schema in memory (needed after every page load)
+  var id='rentalunit';
+  var tabKey='cat_'+id;
+  // Build the schema definition
+  var schema=[
+    {k:'member',l:'Owner',type:'member'},
+    {k:'renterName',l:'Current Renter',type:'text'},
+    {k:'renterPhone',l:'Renter Phone',type:'text'},
+    {k:'renterEmail',l:'Renter Email',type:'text'},
+    {k:'leaseStart',l:'Lease Start',type:'date'},
+    {k:'leaseExpiry',l:'Lease Expiry',type:'date',expiry:true},
+    {k:'monthlyRent',l:'Monthly Rent',type:'text'},
+    {k:'securityDeposit',l:'Security Deposit',type:'text'},
+    {k:'leaseDoc',l:'Lease Document',type:'text'},
+    {k:'entryType',l:'Entry Type',type:'select',opts:['Lease Info','Appliance','Maintenance','Utility','Insurance','Other']},
+    {k:'applianceType',l:'Appliance / Item',type:'select',opts:['Refrigerator','Washer','Dryer','Dishwasher','Oven/Range','Microwave','HVAC/Furnace','Water Heater','Air Conditioner','Garbage Disposal','Smoke Detector','Water Softener','Sump Pump','Garage Door','Other']},
+    {k:'brand',l:'Brand',type:'text'},
+    {k:'modelNum',l:'Model #',type:'text'},
+    {k:'serial',l:'Serial #',type:'text',secret:true},
+    {k:'purchaseDate',l:'Purchase Date',type:'date'},
+    {k:'warrantyExp',l:'Warranty Expires',type:'date',expiry:true},
+    {k:'lastService',l:'Last Service',type:'date'},
+    {k:'nextService',l:'Next Service Due',type:'date',expiry:true},
+    {k:'vendor',l:'Service Vendor',type:'text'},
+    {k:'vendorPhone',l:'Vendor Phone',type:'text'},
+    {k:'notes',l:'Notes',type:'text'},
+  ];
+  SCHEMAS[tabKey]=schema;
+  // Register scan types for rental unit
+  SCAN_DOC_TYPES[tabKey]=[
+    {id:'lease_agreement', label:'📋 Lease Agreement'},
+    {id:'document', label:'📄 Other Document'},
+  ];
+
+  // Only add to DATA if it doesn't already exist (first-time setup)
+  var already=(DATA.customCategories||[]).some(function(c){return c.id===id;});
+  if(!already){
+    var cat={id:id,name:'Rental Unit',icon:'🏘️'};
+    DATA.customCategories=DATA.customCategories||[];
+    DATA.customCategories.push(cat);
+    DATA[tabKey]=[];
+    TAB_META[tabKey]={label:'Rental Unit',icon:'🏘️',nameLabel:'Unit / Property Address'};
+    // Only save when adding for the first time, and only if data is already loaded
+    // (not during initial load sequence)
+    if(localStorage.getItem(VAULT_KEY)){save();}
+  } else {
+    // Already exists in saved data — just make sure TAB_META is registered
+    if(!TAB_META[tabKey]){
+      TAB_META[tabKey]={label:'Rental Unit',icon:'🏘️',nameLabel:'Unit / Property Address'};
+    }
+    if(!DATA[tabKey])DATA[tabKey]=[];
+  }
+}
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function esc(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ══ SIDEBAR ══
+function renderSidebar(){
+  var h='';
+  h+='<div style="padding:8px 0">';
+  h+='<div class="sb-label">Sections</div>';
+  var stdTabs=['docs','bank','insurance','passwords','medical','property','vehicles','notes'];
+  stdTabs.forEach(function(t){
+    var m=TAB_META[t];var cnt=(DATA[t]||[]).length;
+    h+='<button class="sb-btn'+(ACTIVE_TAB===t?' active':'')+'" onclick="setTab(\''+t+'\',this)" id="sb-'+t+'">'
+      +'<span class="ico">'+m.icon+'</span>'+m.label
+      +'<span class="sb-count" id="cnt-'+t+'">'+cnt+'</span>'
+      +'</button>';
+  });
+  if(DATA.customCategories&&DATA.customCategories.length){
+    h+='<div class="sb-divider"></div>';
+    h+='<div class="sb-label">Custom</div>';
+    h+='<div class="sb-custom-section">';
+    DATA.customCategories.forEach(function(cat){
+      var cnt=(DATA['cat_'+cat.id]||[]).length;
+      h+='<button class="sb-custom-btn'+(ACTIVE_TAB==='cat_'+cat.id?' active':'')+'" onclick="setTab(\'cat_'+cat.id+'\',this)">'
+        +'<span class="ico">'+cat.icon+'</span>'+esc(cat.name)
+        +'<span class="sb-count">'+cnt+'</span>'
+        +'</button>';
+    });
+    h+='</div>';
+  }
+  h+='<div class="sb-divider"></div>';
+  h+='<button class="sb-add-cat" onclick="openAddCatModal()">＋ Add Category</button>';
+  h+='<div class="sb-divider"></div>';
+  h+='<div class="sb-label">Settings</div>';
+  h+='<button class="sb-btn'+(ACTIVE_TAB==='settings'?' active':'')+'" onclick="setTab(\'settings\',this)"><span class="ico">⚙️</span>Family Members</button>';
+  h+='</div>';
+  document.getElementById('sidebar').innerHTML=h;
+}
+
+// ══ NAV ══
+function setTab(tab,btn){
+  ACTIVE_TAB=tab;SEARCH_Q='';MEMBER_FILTER='all';SORT_COL='';SORT_DIR=1;_editRow={};
+  renderSidebar();renderTab();
+}
+function renderTab(){
+  if(ACTIVE_TAB==='settings'){renderSettings();return;}
+  var tab=ACTIVE_TAB;
+  var meta=TAB_META[tab];
+  if(!meta){
+    // custom category
+    var catId=tab.replace('cat_','');
+    var cat=(DATA.customCategories||[]).find(function(c){return c.id===catId;});
+    if(!cat){document.getElementById('main-content').innerHTML='<p>Category not found.</p>';return;}
+    var fakeMeta={label:cat.name,icon:cat.icon,nameLabel:'Name'};
+    renderGridSection(tab,fakeMeta);
+    return;
+  }
+  renderGridSection(tab,meta);
+}
+
+// ══ GRID SECTION ══
+function getVisibleCols(tab){
+  var base=SCHEMAS[tab]||[];
+  var custom=(DATA.customCols&&DATA.customCols[tab])||[];
+  var all=[{k:'name',l:getNameLabel(tab),type:'text',req:true}].concat(base).concat(custom);
+  var hidden=(DATA.hiddenCols&&DATA.hiddenCols[tab])||[];
+  return all.filter(function(c){return hidden.indexOf(c.k)<0;});
+}
+function getAllCols(tab){
+  var base=SCHEMAS[tab]||[];
+  var custom=(DATA.customCols&&DATA.customCols[tab])||[];
+  return [{k:'name',l:getNameLabel(tab),type:'text',req:true}].concat(base).concat(custom);
+}
+function getNameLabel(tab){
+  if(TAB_META[tab])return TAB_META[tab].nameLabel;
+  var catId=tab.replace('cat_','');
+  var cat=(DATA.customCategories||[]).find(function(c){return c.id===catId;});
+  return cat?cat.name+' Name':'Name';
+}
+
+function renderGridSection(tab,meta){
+  // Ensure custom category tab schemas exist
+  if(!SCHEMAS[tab]){
+    SCHEMAS[tab]=[
+      {k:'member',l:'Person',type:'member'},
+      {k:'notes',l:'Notes',type:'text'},
+    ];
+  }
+  if(!DATA[tab])DATA[tab]=[];
+
+  var recs=DATA[tab]||[];
+  var cols=getVisibleCols(tab);
+
+  // Filter
+  var filtered=recs.filter(function(r){
+    var sm=MEMBER_FILTER==='all'||r.member===MEMBER_FILTER;
+    var sq=!SEARCH_Q||JSON.stringify(r).toLowerCase().indexOf(SEARCH_Q.toLowerCase())>=0;
+    return sm&&sq;
+  });
+
+  // Sort
+  if(SORT_COL){
+    filtered.sort(function(a,b){
+      var va=String(a[SORT_COL]||'').toLowerCase();
+      var vb=String(b[SORT_COL]||'').toLowerCase();
+      return va<vb?-SORT_DIR:va>vb?SORT_DIR:0;
+    });
+  }
+
+  var h='<div class="page-head">'
+    +'<div class="page-title">'+meta.icon+' '+meta.label+'</div>'
+    +'<div class="page-actions">'
+    +(tab==='passwords'?'<button class="tbtn" onclick="openLastPassImport()" style="border-color:var(--blue);color:var(--blue)" title="Import from LastPass CSV">🔑 Import LastPass</button>':'')
+    +'<button class="tbtn" onclick="openColModal(\''+tab+'\')">⚙ Columns</button>'
+    +'<button class="tbtn gold" onclick="addNewRow(\''+tab+'\')">＋ Add Row</button>'
+    +'</div></div>';
+
+  h+='<div class="toolbar">'
+    +'<input class="search-bar" placeholder="🔍 Search..." id="search-input" value="'+esc(SEARCH_Q)+'" oninput="debounceSearch(this.value)"/>'
+    +'<select class="filter-select" onchange="MEMBER_FILTER=this.value;renderTab()">'
+    +'<option value="all"'+(MEMBER_FILTER==='all'?' selected':'')+'>All Members</option>'
+    +DATA.members.map(function(m){return '<option value="'+esc(m)+'"'+(MEMBER_FILTER===m?' selected':'')+'>'+esc(m)+'</option>';}).join('')
+    +'</select>'
+    +'</div>';
+
+  if(!filtered.length){
+    h+='<div class="grid-wrap"><div class="empty-state"><div class="big">'+meta.icon+'</div><p>No records yet'+(SEARCH_Q||MEMBER_FILTER!=='all'?' matching your filters':'')+'. Click <strong>+ Add Row</strong> to start.</p></div></div>';
+  } else {
+    h+='<div class="grid-wrap"><table class="grid-table"><thead><tr>';
+    h+='<th class="sortable" onclick="sortBy(\'name\')" style="min-width:140px">'+esc(getNameLabel(tab))+'<span class="sort-arrow">'+(SORT_COL==='name'?(SORT_DIR>0?'▲':'▼'):'')+'</span></th>';
+    cols.forEach(function(col){
+      if(col.k==='name')return;
+      h+='<th class="sortable" onclick="sortBy(\''+col.k+'\')" style="min-width:100px">'
+        +esc(col.l)+(col.secret?'<span title="Sensitive" style="color:var(--amber);margin-left:3px;font-size:10px">🔒</span>':'')
+        +'<span class="sort-arrow">'+(SORT_COL===col.k?(SORT_DIR>0?'▲':'▼'):'')+'</span>'
+        +'</th>';
+    });
+    h+='<th class="th-actions">Actions</th>';
+    h+='</tr></thead><tbody id="grid-body">';
+
+    filtered.forEach(function(r){
+      h+=renderRow(r,tab,cols,false);
+    });
+
+    h+='</tbody></table>';
+    h+='<button class="add-row-btn" onclick="addNewRow(\''+tab+'\')">＋ Add row</button>';
+    h+='</div>';
+  }
+
+  document.getElementById('main-content').innerHTML=h;
+}
+
+function renderRow(r,tab,cols,isEditing){
+  var id=r.id;
+  var editing=isEditing;
+  var h='<tr id="row-'+id+'" class="'+(editing?'editing':'')+'">';
+
+  // name cell
+  var nameCol={k:'name',l:getNameLabel(tab),type:'text',req:true};
+  h+=renderCell(r,tab,nameCol,editing);
+
+  cols.forEach(function(col){
+    if(col.k==='name')return;
+    h+=renderCell(r,tab,col,editing);
+  });
+
+  h+='<td><div class="row-actions">';
+  if(editing){
+    h+='<button class="icon-btn save-btn" title="Save" onclick="saveRowEdit(\''+tab+'\',\''+id+'\')">✓</button>';
+    h+='<button class="icon-btn cancel-btn" title="Cancel" onclick="cancelRowEdit(\''+tab+'\',\''+id+'\')">✕</button>';
+  } else {
+    // Show attachment button if this record has a scanned document
+    var hasAttachment = DATA.attachments && DATA.attachments[id];
+    if(hasAttachment){
+      h+='<button class="icon-btn" title="View scanned document" onclick="viewAttachment(\''+id+'\')" style="color:var(--blue)">📎</button>';
+    }
+    h+='<button class="icon-btn" title="Edit" onclick="startRowEdit(\''+tab+'\',\''+id+'\')">✏️</button>';
+    h+='<button class="icon-btn del-btn" title="Delete" onclick="askDelete(\''+tab+'\',\''+id+'\')">🗑️</button>';
+  }
+  h+='</div></td></tr>';
+  return h;
+}
+
+function renderCell(r,tab,col,editing){
+  var val=r[col.k]||'';
+  if(editing){
+    var input='';
+    if(col.type==='member'){
+      input='<select class="edit-cell-select" id="ec-'+col.k+'">'
+        +'<option value="">—</option>'
+        +DATA.members.map(function(m){return '<option'+(val===m?' selected':'')+'>'+esc(m)+'</option>';}).join('')
+        +'</select>';
+    } else if(col.type==='country'){
+      input='<select class="edit-cell-select" id="ec-'+col.k+'">'
+        +['USA','India','Both','N/A','Other'].map(function(o){return '<option'+(val===o?' selected':'')+'>'+o+'</option>';}).join('')
+        +'</select>';
+    } else if(col.type==='select'){
+      input='<select class="edit-cell-select" id="ec-'+col.k+'">'
+        +'<option value="">—</option>'
+        +(col.opts||[]).map(function(o){return '<option'+(val===o?' selected':'')+'>'+o+'</option>';}).join('')
+        +'</select>';
+    } else if(col.type==='date'){
+      input='<input class="edit-cell-input" type="date" id="ec-'+col.k+'" value="'+esc(val)+'"/>';
+    } else {
+      input='<input class="edit-cell-input" type="text" id="ec-'+col.k+'" value="'+esc(val)+'" placeholder="'+esc(col.l)+'"/>';
+    }
+    return '<td>'+input+'</td>';
+  }
+
+  // Display
+  var display='';
+  if(col.type==='date'&&val){
+    var exp=new Date(val);var now=new Date();var days=Math.round((exp-now)/86400000);
+    var cls='cell-date';
+    if(col.expiry){cls=days<0?'cell-expired':days<90?'cell-expiring':'cell-ok';}
+    display='<span class="cell-text '+cls+'" title="'+esc(val)+'">'+esc(val)+(days<0&&col.expiry?' ⚠':'')+'</span>';
+  } else if(col.secret&&val){
+    display='<span class="cell-secret" title="Click to reveal" onclick="this.classList.toggle(\'revealed\')">'+esc(val)+'</span>';
+  } else if(col.type==='member'&&val){
+    display='<span class="badge b-green">'+esc(val)+'</span>';
+  } else if(col.type==='country'&&val&&val!=='N/A'){
+    var flag=val==='USA'?'🇺🇸':val==='India'?'🇮🇳':val==='Both'?'🇺🇸🇮🇳':'🌍';
+    display='<span class="badge b-blue">'+flag+' '+esc(val)+'</span>';
+  } else {
+    display='<span class="cell-text" title="'+esc(val)+'">'+esc(val)+'</span>';
+  }
+  return '<td>'+display+'</td>';
+}
+
+function sortBy(col){
+  if(SORT_COL===col)SORT_DIR*=-1;
+  else{SORT_COL=col;SORT_DIR=1;}
+  renderTab();
+}
+
+// ── DEBOUNCED SEARCH (fixes mobile keyboard reopening bug) ──
+var _searchTimer=null;
+function debounceSearch(val){
+  clearTimeout(_searchTimer);
+  _searchTimer=setTimeout(function(){
+    SEARCH_Q=val;
+    // Re-render table body only (not full tab) to avoid losing focus
+    var inp=document.getElementById('search-input');
+    var pos=inp?inp.selectionStart:0;
+    renderTab();
+    // Restore focus and cursor position
+    var newInp=document.getElementById('search-input');
+    if(newInp){newInp.focus();try{newInp.setSelectionRange(pos,pos);}catch(e){}}
+  },250);
+}
+
+// ── LASTPASS CSV IMPORT ──
+function openLastPassImport(){
+  var inp=document.getElementById('lp-csv-file');
+  if(inp)inp.click();
+}
+function importLastPassCSV(evt){
+  var file=evt.target.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var text=e.target.result;
+      var lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+      if(!lines.length){alert('Empty file.');return;}
+
+      var headers=parseCSVLine(lines[0]).map(function(h){return h.trim().toLowerCase();});
+      var urlIdx=headers.indexOf('url');
+      var userIdx=headers.indexOf('username');
+      var passIdx=headers.indexOf('password');
+      var nameIdx=headers.indexOf('name');
+      var groupIdx=headers.indexOf('grouping');
+      var totpIdx=headers.indexOf('totp');
+      var extraIdx=headers.indexOf('extra');
+
+      if(urlIdx<0&&nameIdx<0){
+        alert('Could not find expected columns.\nFound: '+headers.join(', '));
+        return;
+      }
+
+      // Always ensure passwords array exists
+      if(!DATA.passwords)DATA.passwords=[];
+
+      var imported=0;
+      var skipped=0;
+      var defaultMember=DATA.members&&DATA.members.length?DATA.members[0]:'';
+
+      for(var i=1;i<lines.length;i++){
+        var line=lines[i].trim();if(!line)continue;
+        var cols=parseCSVLine(line);
+        var siteName=nameIdx>=0?(cols[nameIdx]||'').trim():'';
+        var url=urlIdx>=0?(cols[urlIdx]||'').trim():'';
+        var username=userIdx>=0?(cols[userIdx]||'').trim():'';
+        var password=passIdx>=0?(cols[passIdx]||'').trim():'';
+        var group=groupIdx>=0?(cols[groupIdx]||'').trim():'';
+        var totp=totpIdx>=0?(cols[totpIdx]||'').trim():'';
+        var notes=extraIdx>=0?(cols[extraIdx]||'').trim():'';
+
+        if(!siteName&&!url&&!username)continue;
+        if(url==='http://sn'||url.indexOf('lastpass.com')>=0)continue;
+
+        var cat='Other';
+        var g=(group||'').toLowerCase();
+        if(g.indexOf('bank')>=0||g.indexOf('finance')>=0||g.indexOf('invest')>=0)cat='Banking';
+        else if(g.indexOf('email')>=0||g.indexOf('mail')>=0)cat='Email';
+        else if(g.indexOf('social')>=0)cat='Social Media';
+        else if(g.indexOf('shop')>=0||g.indexOf('retail')>=0)cat='Shopping';
+        else if(g.indexOf('stream')>=0||g.indexOf('entertain')>=0||g.indexOf('media')>=0)cat='Streaming';
+        else if(g.indexOf('work')>=0||g.indexOf('office')>=0||g.indexOf('business')>=0||g.indexOf('product')>=0)cat='Work';
+        else if(g.indexOf('health')>=0||g.indexOf('medical')>=0||g.indexOf('insurance')>=0)cat='Healthcare';
+        else if(g.indexOf('gov')>=0||g.indexOf('irs')>=0||g.indexOf('dmv')>=0)cat='Government';
+        else if(g.indexOf('util')>=0)cat='Utilities';
+
+        var displayName=siteName;
+        if(!displayName&&url){
+          try{displayName=new URL(url).hostname.replace('www.','');}catch(ex){displayName=url.split('/')[2]||url;}
+        }
+
+        // Duplicate check: same site name + username
+        var exists=DATA.passwords.some(function(r){
+          return r.name===displayName&&r.username===username;
+        });
+
+        if(!exists){
+          DATA.passwords.push({
+            id:uid(),
+            name:displayName||username||'Imported',
+            member:defaultMember,
+            category:cat,
+            website:url,
+            username:username,
+            password:password,
+            twoFactor:totp,
+            notes:notes,
+            pin:''
+          });
+          imported++;
+        } else {
+          skipped++;
+        }
+      }
+
+      save();
+      ACTIVE_TAB='passwords';
+      renderSidebar();renderTab();
+      alert('✅ Imported '+imported+' passwords!\n'+(skipped?'('+skipped+' duplicates skipped)':''));
+    }catch(err){
+      alert('Import failed: '+err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+  evt.target.value='';
+}
+function parseCSVLine(line){
+  var result=[];var cur='';var inQ=false;
+  for(var i=0;i<line.length;i++){
+    var ch=line[i];
+    if(ch==='"'){
+      if(inQ&&line[i+1]==='"'){cur+='"';i++;}
+      else{inQ=!inQ;}
+    } else if(ch===','&&!inQ){result.push(cur);cur='';}
+    else{cur+=ch;}
+  }
+  result.push(cur);
+  return result;
+}
+
+// ══ INLINE EDIT ══
+function startRowEdit(tab,id){
+  _editRow={tab:tab,id:id};
+  var recs=DATA[tab]||[];
+  var r=recs.find(function(x){return x.id===id;});
+  if(!r)return;
+  var cols=getVisibleCols(tab);
+  var row=document.getElementById('row-'+id);
+  if(!row)return;
+  var tmp=document.createElement('table');
+  tmp.innerHTML='<tbody>'+renderRow(r,tab,cols,true)+'</tbody>';
+  var nr=tmp.querySelector('tr');
+  if(nr)row.replaceWith(nr);
+}
+function cancelRowEdit(tab,id){
+  _editRow={};
+  var recs=DATA[tab]||[];
+  var r=recs.find(function(x){return x.id===id;});
+  var row=document.getElementById('row-'+id);
+  // If the record has no name it was a brand-new unsaved row — remove it
+  if(!r||!r.name){
+    DATA[tab]=(DATA[tab]||[]).filter(function(x){return x.id!==id;});
+    save();
+    if(row)row.remove();
+    updateSidebarCount(tab);
+    return;
+  }
+  var cols=getVisibleCols(tab);
+  if(row){var tmp=document.createElement('table');tmp.innerHTML='<tbody>'+renderRow(r,tab,cols,false)+'</tbody>';var nr=tmp.querySelector('tr');if(nr)row.replaceWith(nr);}
+}
+function saveRowEdit(tab,id){
+  var recs=DATA[tab]||[];
+  var idx=recs.findIndex(function(x){return x.id===id;});
+  if(idx<0)return;
+  var allCols=getAllCols(tab);
+  var rec={id:id};
+  allCols.forEach(function(col){
+    var el=document.getElementById('ec-'+col.k);
+    if(el)rec[col.k]=el.value;
+    else rec[col.k]=recs[idx][col.k]||'';
+  });
+  DATA[tab][idx]=rec;
+  save();_editRow={};
+  var cols=getVisibleCols(tab);
+  var row=document.getElementById('row-'+id);
+  if(row){var tmp=document.createElement('table');tmp.innerHTML='<tbody>'+renderRow(rec,tab,cols,false)+'</tbody>';var nr=tmp.querySelector('tr');if(nr)row.replaceWith(nr);}
+  updateSidebarCount(tab);
+}
+
+function addNewRow(tab){
+  if(!DATA[tab])DATA[tab]=[];
+  var id=uid();
+  var rec={id:id};
+  DATA[tab].push(rec);
+  save();
+  var cols=getVisibleCols(tab);
+  var tbody=document.getElementById('grid-body');
+  if(!tbody){renderTab();return;}
+  var tmp=document.createElement('table');
+  tmp.innerHTML='<tbody>'+renderRow(rec,tab,cols,false)+'</tbody>';
+  var tr=tmp.querySelector('tr');
+  if(tr)tbody.appendChild(tr);
+  // immediately put in edit mode
+  startRowEdit(tab,id);
+  updateSidebarCount(tab);
+  // scroll to new row
+  var newRow=document.getElementById('row-'+id);
+  if(newRow)newRow.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function updateSidebarCount(tab){
+  var el=document.getElementById('cnt-'+tab);
+  if(el)el.textContent=(DATA[tab]||[]).length;
+}
+
+// ══ DELETE ══
+function askDelete(tab,id){_delTab=tab;_delId=id;openModal('del-modal');}
+function confirmDelete(){
+  if(_delTab&&_delId){
+    DATA[_delTab]=(DATA[_delTab]||[]).filter(function(r){return r.id!==_delId;});
+    // Also remove any attachment for this record
+    if(DATA.attachments&&DATA.attachments[_delId]){
+      delete DATA.attachments[_delId];
+    }
+    save();
+  }
+  closeModal('del-modal');renderTab();
+}
+
+// ══ COLUMN MODAL ══
+function openColModal(tab){
+  var allCols=getAllCols(tab);
+  var hidden=(DATA.hiddenCols&&DATA.hiddenCols[tab])||[];
+  var custom=(DATA.customCols&&DATA.customCols[tab])||[];
+
+  var h='<div class="col-list">';
+  allCols.forEach(function(col){
+    var isHidden=hidden.indexOf(col.k)>=0;
+    var isCustom=custom.some(function(c){return c.k===col.k;});
+    var isName=col.k==='name';
+    h+='<div class="col-item">'
+      +'<input type="checkbox" id="col-vis-'+col.k+'" '+(isName?'checked disabled':(isHidden?'':'checked'))+' onchange="toggleColVisibility(\''+tab+'\',\''+col.k+'\',this.checked)"/>'
+      +'<span class="col-item-label">'+esc(col.l)+(col.secret?' 🔒':'')+(col.type==='date'?' 📅':'')+'</span>'
+      +(isCustom&&!isName?'<button class="col-item-del" onclick="promptDelCol(\''+tab+'\',\''+col.k+'\')" title="Remove column">✕</button>':'')
+      +'</div>';
+  });
+  h+='</div>';
+  h+='<div style="font-size:12px;color:var(--text3);margin-bottom:10px;font-family:var(--mono)">Add a new column:</div>';
+  h+='<div class="add-col-row">'
+    +'<input class="add-col-input" id="new-col-name" placeholder="Column name..." onkeydown="if(event.key===\'Enter\')addColumn(\''+tab+'\')" />'
+    +'<select class="add-col-type" id="new-col-type">'
+    +'<option value="text">Text</option>'
+    +'<option value="date">Date</option>'
+    +'<option value="text-secret">Secret/Sensitive</option>'
+    +'</select>'
+    +'<button class="tbtn gold" onclick="addColumn(\''+tab+'\')">+ Add</button>'
+    +'</div>';
+
+  document.getElementById('col-modal-title').textContent='Columns — '+(TAB_META[tab]?TAB_META[tab].label:tab);
+  document.getElementById('col-modal-body').innerHTML=h;
+  openModal('col-modal');
+}
+
+function toggleColVisibility(tab,key,visible){
+  if(!DATA.hiddenCols)DATA.hiddenCols={};
+  if(!DATA.hiddenCols[tab])DATA.hiddenCols[tab]=[];
+  if(visible){DATA.hiddenCols[tab]=DATA.hiddenCols[tab].filter(function(k){return k!==key;});}
+  else{if(DATA.hiddenCols[tab].indexOf(key)<0)DATA.hiddenCols[tab].push(key);}
+  save();
+}
+
+function addColumn(tab){
+  var nameEl=document.getElementById('new-col-name');
+  var typeEl=document.getElementById('new-col-type');
+  var name=(nameEl.value||'').trim();
+  if(!name){nameEl.style.borderColor='var(--red)';return;}
+  var type=typeEl.value;
+  var key='custom_'+name.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'')+'_'+uid().slice(0,4);
+  var secret=type==='text-secret';
+  var colType=secret?'text':(type==='date'?'date':'text');
+  var col={k:key,l:name,type:colType,secret:secret,custom:true};
+  if(!DATA.customCols)DATA.customCols={};
+  if(!DATA.customCols[tab])DATA.customCols[tab]=[];
+  DATA.customCols[tab].push(col);
+  save();
+  nameEl.value='';nameEl.style.borderColor='';
+  openColModal(tab);
+}
+
+function promptDelCol(tab,key){_delColTab=tab;_delColKey=key;closeModal('col-modal');openModal('del-col-modal');}
+function confirmDelCol(){
+  if(_delColTab&&_delColKey){
+    if(DATA.customCols&&DATA.customCols[_delColTab]){
+      DATA.customCols[_delColTab]=DATA.customCols[_delColTab].filter(function(c){return c.k!==_delColKey;});
+    }
+    (DATA[_delColTab]||[]).forEach(function(r){delete r[_delColKey];});
+    save();
+  }
+  closeModal('del-col-modal');renderTab();
+}
+
+// ══ CUSTOM CATEGORIES ══
+function openAddCatModal(){
+  document.getElementById('new-cat-name').value='';
+  document.getElementById('new-cat-icon').value='📁';
+  openModal('add-cat-modal');
+}
+function saveNewCategory(){
+  var name=(document.getElementById('new-cat-name').value||'').trim();
+  var icon=(document.getElementById('new-cat-icon').value||'📁').trim()||'📁';
+  if(!name){document.getElementById('new-cat-name').style.borderColor='var(--red)';return;}
+  var id=uid();
+  var cat={id:id,name:name,icon:icon};
+  DATA.customCategories.push(cat);
+  DATA['cat_'+id]=[];
+  TAB_META['cat_'+id]={label:name,icon:icon,nameLabel:name+' Name'};
+  save();closeModal('add-cat-modal');
+  ACTIVE_TAB='cat_'+id;
+  renderSidebar();renderTab();
+}
+
+// ══ SETTINGS ══
+function renderSettings(){
+  var h='<div class="page-head"><div class="page-title">⚙️ Settings</div></div>';
+  h+='<div class="settings-card"><h3>👨‍👩‍👧‍👦 Family Members</h3>'
+    +'<div class="member-list" id="member-list"></div>'
+    +'<div class="add-member-row">'
+    +'<input class="add-member-input" id="new-member" placeholder="Add family member..." onkeydown="if(event.key===\'Enter\')addMember()"/>'
+    +'<button class="tbtn gold" onclick="addMember()">+ Add</button>'
+    +'</div></div>';
+
+  // 2FA Settings card
+  var twofa=getTwofaSettings();
+  h+='<div class="settings-card"><h3>🔒 Two-Factor Authentication</h3>';
+  h+='<p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">Use <strong>Google Authenticator</strong>, <strong>Authy</strong>, or any authenticator app on your phone. No emails, no SMS — codes are generated locally on your device. Nothing is sent anywhere.</p>';
+
+  if(twofa.totpEnabled && twofa.totpSecret){
+    // TOTP already configured
+    h+='<div style="background:var(--green-l);border:1px solid rgba(26,122,74,0.25);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px">'
+      +'<span style="font-size:20px">✅</span>'
+      +'<div><div style="font-weight:600;color:var(--green);font-size:13px">Authenticator App Connected</div>'
+      +'<div style="font-size:11px;color:var(--text3);margin-top:2px">2FA is active. You\'ll need your authenticator app each time you log in.</div></div>'
+      +'</div>'
+      +'<button class="tbtn red" onclick="disable2FA()">Disable 2FA</button>';
+  } else {
+    // Setup flow
+    h+='<div style="font-size:13px;font-weight:600;margin-bottom:10px">Setup Steps:</div>'
+      +'<div style="font-size:12px;color:var(--text2);line-height:1.9;margin-bottom:16px">'
+      +'1️⃣ Install <strong>Google Authenticator</strong> or <strong>Authy</strong> on your phone<br>'
+      +'2️⃣ Click <strong>Generate QR Code</strong> below<br>'
+      +'3️⃣ Scan the QR code with your authenticator app<br>'
+      +'4️⃣ Enter the 6-digit code shown in the app to confirm'
+      +'</div>'
+      +'<div id="totp-setup-area">'
+      +'<button class="tbtn gold" onclick="startTOTPSetup()">🔑 Generate QR Code</button>'
+      +'</div>';
+  }
+  h+='</div>';
+
+  h+='<div class="settings-card"><h3>🔐 Change Password</h3>'
+    +'<div class="two-col">'
+    +'<div class="fg"><label>New Password</label><input type="password" id="chpw1" placeholder="New password"/></div>'
+    +'<div class="fg"><label>Confirm</label><input type="password" id="chpw2" placeholder="Confirm"/></div>'
+    +'</div><button class="tbtn gold" onclick="changePw()">Update Password</button></div>';
+  h+='<div class="settings-card" style="background:var(--red-l);border-color:rgba(176,42,26,0.2)">'
+    +'<h3 style="color:var(--red)">⚠ Danger Zone</h3>'
+    +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px">Clear all vault data. Export first.</p>'
+    +'<button class="tbtn red" onclick="clearAll()">Clear All Data</button></div>';
+  document.getElementById('main-content').innerHTML=h;
+  renderMemberList();
+}
+function renderMemberList(){
+  var el=document.getElementById('member-list');if(!el)return;
+  el.innerHTML=DATA.members.map(function(m){
+    return '<div class="member-chip">'+esc(m)+'<button onclick="removeMember(\''+esc(m)+'\')">×</button></div>';
+  }).join('');
+}
+function addMember(){var v=(document.getElementById('new-member').value||'').trim();if(!v)return;if(DATA.members.indexOf(v)>=0)return;DATA.members.push(v);save();document.getElementById('new-member').value='';renderMemberList();}
+function removeMember(m){DATA.members=DATA.members.filter(function(x){return x!==m;});save();renderMemberList();}
+function changePw(){
+  var p1=document.getElementById('chpw1').value;var p2=document.getElementById('chpw2').value;
+  if(!p1||p1.length<4){alert('Min 4 characters.');return;}
+  if(p1!==p2){alert('Passwords do not match.');return;}
+  localStorage.setItem(PW_KEY,hashPw(p1));
+  document.getElementById('chpw1').value='';document.getElementById('chpw2').value='';
+  alert('Password updated!');
+}
+
+// ══ 2FA — TOTP (Google Authenticator compatible) ══
+var TWOFA_KEY='fvg_2fa_v1';
+var _otpHash=null;
+var _otpExpiry=null;
+var _totpSetupSecret=null;
+
+function getTwofaSettings(){
+  try{return JSON.parse(localStorage.getItem(TWOFA_KEY)||'{}');}catch(e){return {};}
+}
+function saveTwofaSettings(obj){
+  localStorage.setItem(TWOFA_KEY,JSON.stringify(obj));
+}
+
+// ── TOTP Core (RFC 6238) ──
+// Base32 decode
+function base32Decode(s){
+  var alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  s=s.toUpperCase().replace(/=+$/,'');
+  var bits=0,val=0,out=[];
+  for(var i=0;i<s.length;i++){
+    var idx=alphabet.indexOf(s[i]);if(idx<0)continue;
+    val=(val<<5)|idx;bits+=5;
+    if(bits>=8){out.push((val>>>(bits-8))&0xff);bits-=8;}
+  }
+  return new Uint8Array(out);
+}
+
+// HMAC-SHA1 (pure JS, no external libs)
+async function hmacSHA1(keyBytes, msgBytes){
+  var key=await crypto.subtle.importKey('raw',keyBytes,{name:'HMAC',hash:'SHA-1'},false,['sign']);
+  var sig=await crypto.subtle.sign('HMAC',key,msgBytes);
+  return new Uint8Array(sig);
+}
+
+// Generate TOTP code for a given secret and time step
+async function getTOTPCode(secret, timeStep){
+  var step=timeStep||Math.floor(Date.now()/1000/30);
+  var keyBytes=base32Decode(secret);
+  // Encode step as 8-byte big-endian
+  var msg=new Uint8Array(8);
+  var tmp=step;
+  for(var i=7;i>=0;i--){msg[i]=tmp&0xff;tmp=Math.floor(tmp/256);}
+  var hash=await hmacSHA1(keyBytes,msg);
+  var offset=hash[hash.length-1]&0x0f;
+  var code=((hash[offset]&0x7f)<<24)|((hash[offset+1]&0xff)<<16)|((hash[offset+2]&0xff)<<8)|(hash[offset+3]&0xff);
+  return String(code%1000000).padStart(6,'0');
+}
+
+// Verify TOTP — check current step and ±1 step for clock drift
+async function verifyTOTP(secret, userCode){
+  var step=Math.floor(Date.now()/1000/30);
+  for(var delta=-1;delta<=1;delta++){
+    var expected=await getTOTPCode(secret,step+delta);
+    if(expected===userCode)return true;
+  }
+  return false;
+}
+
+// Generate random base32 secret
+function generateTOTPSecret(){
+  var chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  var s='';
+  var arr=new Uint8Array(20);
+  crypto.getRandomValues(arr);
+  arr.forEach(function(b){s+=chars[b%32];});
+  return s;
+}
+
+// Build otpauth URI for QR code
+function buildOTPAuthURI(secret){
+  return 'otpauth://totp/FamilyVault:Shailesh?secret='+secret+'&issuer=FamilyVault&algorithm=SHA1&digits=6&period=30';
+}
+
+// Generate QR code using qrserver.com (just a URL, no data sent — the URL IS the QR content)
+function getQRCodeURL(text){
+  return 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(text);
+}
+
+// ── TOTP Setup UI ──
+async function startTOTPSetup(){
+  _totpSetupSecret=generateTOTPSecret();
+  var uri=buildOTPAuthURI(_totpSetupSecret);
+  var qrUrl=getQRCodeURL(uri);
+
+  var area=document.getElementById('totp-setup-area');
+  area.innerHTML=
+    '<div style="text-align:center;margin-bottom:14px">'
+    +'<img src="'+qrUrl+'" width="180" height="180" style="border:6px solid #fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.12)" alt="QR Code"/>'
+    +'</div>'
+    +'<div style="font-size:11px;color:var(--text3);margin-bottom:8px;text-align:center">Can\'t scan? Enter this key manually in your app:</div>'
+    +'<div style="font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:0.15em;text-align:center;background:var(--surface2);padding:8px 12px;border-radius:var(--r);border:1px solid var(--border);margin-bottom:16px;word-break:break-all">'+_totpSetupSecret+'</div>'
+    +'<div style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:600">Enter the 6-digit code from your app to confirm:</div>'
+    +'<div style="display:flex;gap:8px;align-items:center">'
+    +'<input type="text" id="totp-confirm-code" inputmode="numeric" maxlength="6" placeholder="000000" style="flex:1;padding:10px 12px;font-size:18px;font-family:var(--mono);font-weight:700;letter-spacing:0.2em;text-align:center;border:2px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none"/>'
+    +'<button class="tbtn gold" onclick="confirmTOTPSetup()">Verify & Enable</button>'
+    +'</div>'
+    +'<div id="totp-setup-status" style="font-size:12px;margin-top:8px;min-height:18px;text-align:center"></div>';
+}
+
+async function confirmTOTPSetup(){
+  var code=(document.getElementById('totp-confirm-code').value||'').trim();
+  var status=document.getElementById('totp-setup-status');
+  if(code.length!==6){status.textContent='Enter all 6 digits.';status.style.color='var(--red)';return;}
+  status.textContent='Verifying…';status.style.color='var(--text3)';
+  var ok=await verifyTOTP(_totpSetupSecret,code);
+  if(ok){
+    var s=getTwofaSettings();
+    s.totpSecret=_totpSetupSecret;
+    s.totpEnabled=true;
+    saveTwofaSettings(s);
+    _totpSetupSecret=null;
+    status.textContent='✅ 2FA enabled!';status.style.color='var(--green)';
+    setTimeout(function(){renderSettings();},800);
+  } else {
+    status.textContent='❌ Incorrect code — make sure your phone clock is accurate and try again.';
+    status.style.color='var(--red)';
+    document.getElementById('totp-confirm-code').value='';
+    document.getElementById('totp-confirm-code').focus();
+  }
+}
+
+function disable2FA(){
+  if(!confirm('Disable 2FA? Your vault will only be protected by your password.'))return;
+  var s=getTwofaSettings();
+  s.totpEnabled=false;s.totpSecret=null;
+  saveTwofaSettings(s);
+  renderSettings();
+}
+
+// ── TOTP Verification at login ──
+function check2FA(){
+  var s=getTwofaSettings();
+  if(!s.totpEnabled||!s.totpSecret){
+    // No 2FA — go straight in
+    loadData();showApp();
+    return;
+  }
+  // Show 2FA step
+  document.getElementById('lock-step-pw').style.display='none';
+  document.getElementById('lock-step-2fa').style.display='block';
+  document.getElementById('twofa-sent-msg').innerHTML=
+    '<strong style="font-size:15px">📱 Open your Authenticator App</strong><br>'
+    +'<span style="font-size:12px;color:var(--text3)">Enter the 6-digit code shown for Family Vault</span>';
+  document.getElementById('otp-status').textContent='';
+  for(var i=0;i<6;i++)document.getElementById('otp'+i).value='';
+  document.getElementById('otp0').focus();
+}
+
+async function verifyOTP(){
+  var code='';
+  for(var i=0;i<6;i++)code+=document.getElementById('otp'+i).value;
+  if(code.length<6){
+    document.getElementById('otp-status').textContent='Enter all 6 digits.';
+    document.getElementById('otp-status').className='twofa-status err';
+    return;
+  }
+  var s=getTwofaSettings();
+  var ok=await verifyTOTP(s.totpSecret,code);
+  if(ok){
+    document.getElementById('otp-status').textContent='✓ Verified!';
+    document.getElementById('otp-status').className='twofa-status ok';
+    setTimeout(function(){loadData();showApp();},400);
+  } else {
+    document.getElementById('otp-status').textContent='Incorrect code. Check your authenticator app and try again.';
+    document.getElementById('otp-status').className='twofa-status err';
+    for(var i=0;i<6;i++)document.getElementById('otp'+i).value='';
+    document.getElementById('otp0').focus();
+  }
+}
+
+function resendOTP(){
+  // For TOTP there's nothing to resend — just remind user
+  document.getElementById('otp-status').textContent='Open your authenticator app — codes refresh every 30 seconds.';
+  document.getElementById('otp-status').className='twofa-status info';
+}
+
+function skip2FA(){
+  if(confirm('Skip 2FA? You will be logged in with password only.')){
+    loadData();showApp();
+  }
+}
+
+function otpInput(el,idx){
+  var v=el.value.replace(/\D/g,'');
+  el.value=v.slice(0,1);
+  if(v&&idx<5)document.getElementById('otp'+(idx+1)).focus();
+  var code='';
+  for(var i=0;i<6;i++)code+=document.getElementById('otp'+i).value;
+  if(code.length===6)verifyOTP();
+}
+
+function otpKey(event,idx){
+  if(event.key==='Backspace'&&!event.target.value&&idx>0)
+    document.getElementById('otp'+(idx-1)).focus();
+}
+function clearAll(){
+  if(!confirm('Delete ALL data? Export first!'))return;
+  DATA={members:['Shailesh Koppikar','Anu Kumble','Ria Koppikar','Sunder Koppikar','Nalini Koppikar'],customCategories:[],hiddenCols:{},customCols:{},docs:[],bank:[],insurance:[],passwords:[],medical:[],property:[],vehicles:[],notes:[]};
+  save();ACTIVE_TAB='docs';renderSidebar();renderTab();
+}
+
+// ══ EXCEL EXPORT ══
+function exportExcel(){
+  if(typeof XLSX==='undefined'){alert('XLSX not loaded.');return;}
+  var wb=XLSX.utils.book_new();
+  var allTabs=['docs','bank','insurance','passwords','medical','property','vehicles','notes'];
+  (DATA.customCategories||[]).forEach(function(cat){allTabs.push('cat_'+cat.id);});
+
+  allTabs.forEach(function(tab){
+    var meta=TAB_META[tab];if(!meta)return;
+    var cols=getAllCols(tab);
+    var headers=['Name'].concat(cols.filter(function(c){return c.k!=='name';}).map(function(c){return c.l;}));
+    var rows=[headers];
+    (DATA[tab]||[]).forEach(function(r){
+      rows.push([r.name||''].concat(cols.filter(function(c){return c.k!=='name';}).map(function(c){return r[c.k]||'';})));
+    });
+    var ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=headers.map(function(){return {wch:22};});
+    var sheetName=meta.label.slice(0,31);
+    XLSX.utils.book_append_sheet(wb,ws,sheetName);
+  });
+
+  var mws=XLSX.utils.aoa_to_sheet([['Members']].concat(DATA.members.map(function(m){return [m];})));
+  XLSX.utils.book_append_sheet(wb,mws,'Members');
+  XLSX.writeFile(wb,'FamilyVault_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ══ EXCEL IMPORT ══
+function importExcel(evt){
+  var file=evt.target.files[0];if(!file)return;
+  if(typeof XLSX==='undefined'){alert('XLSX not loaded.');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array'});
+      var imported=0;
+      var allTabs=['docs','bank','insurance','passwords','medical','property','vehicles','notes'];
+      (DATA.customCategories||[]).forEach(function(cat){allTabs.push('cat_'+cat.id);});
+      allTabs.forEach(function(tab){
+        var meta=TAB_META[tab];if(!meta)return;
+        var ws=wb.Sheets[meta.label.slice(0,31)];if(!ws)return;
+        var rows=XLSX.utils.sheet_to_json(ws,{header:1});
+        if(rows.length<2)return;
+        var cols=getAllCols(tab);
+        for(var i=1;i<rows.length;i++){
+          var row=rows[i];if(!row||!row.length)continue;
+          var rec={id:uid(),name:row[0]||''};
+          cols.filter(function(c){return c.k!=='name';}).forEach(function(col,ci){rec[col.k]=row[ci+1]!=null?String(row[ci+1]):'';});
+          if(!rec.name)continue;
+          var exists=(DATA[tab]||[]).some(function(r){return r.name===rec.name&&r.member===rec.member;});
+          if(!exists){DATA[tab]=DATA[tab]||[];DATA[tab].push(rec);imported++;}
+        }
+      });
+      save();renderSidebar();renderTab();
+      alert(imported+' records imported.');
+    }catch(err){alert('Import failed: '+err.message);}
+  };
+  reader.readAsArrayBuffer(file);evt.target.value='';
+}
+
+// ══ AI DOCUMENT SCAN ══
+var _scanFile = null;
+var _scanBase64 = null;
+var _scanMime = null;
+var _scanResults = null;
+var _scanDocType = '';
+var _scanAttachment = null; // stores {data, mime, name} for the scanned file
+
+var SCAN_DOC_TYPES = {
+  docs: [
+    {id:'passport', label:'🛂 Passport'},
+    {id:'driver_license', label:'🪪 Driver License'},
+    {id:'ssn', label:'🔏 SSN Card'},
+    {id:'aadhaar', label:'🆔 Aadhaar'},
+    {id:'pan', label:'📋 PAN Card'},
+    {id:'birth_cert', label:'👶 Birth Cert'},
+    {id:'green_card', label:'🟩 Green Card'},
+    {id:'visa', label:'✈️ Visa'},
+  ],
+  bank: [
+    {id:'bank_card', label:'💳 Bank/Credit Card'},
+    {id:'bank_statement', label:'🏦 Statement/Letter'},
+    {id:'check', label:'📄 Check'},
+  ],
+  insurance: [
+    {id:'insurance_card', label:'🛡️ Insurance Card'},
+    {id:'policy_doc', label:'📋 Policy Document'},
+  ],
+  medical: [
+    {id:'medical_card', label:'🏥 Medical Card'},
+    {id:'vaccination', label:'💉 Vaccination Record'},
+    {id:'prescription', label:'💊 Prescription'},
+  ],
+  property: [
+    {id:'deed', label:'🏠 Property Deed'},
+    {id:'mortgage', label:'🏦 Mortgage Doc'},
+    {id:'lease_agreement', label:'📋 Lease Agreement'},
+  ],
+  vehicles: [
+    {id:'registration', label:'📋 Registration'},
+    {id:'title', label:'📜 Title'},
+    {id:'insurance_card', label:'🛡️ Ins. Card'},
+  ],
+  notes: [
+    {id:'document', label:'📄 Document'},
+  ],
+};
+
+// Prompt templates per doc type
+var SCAN_PROMPTS = {
+  passport: `Extract ALL readable information from this passport image. Return ONLY valid JSON (no markdown, no extra text) with these fields:
+{"name":"full name as printed","docNumber":"passport number","issueDate":"YYYY-MM-DD or empty","expiryDate":"YYYY-MM-DD or empty","issuedBy":"issuing country/authority","placeOfIssue":"city or country of issue","country":"country of passport e.g. USA or India","docType":"Passport","notes":"any other info like MRZ line or endorsements"}`,
+
+  driver_license: `Extract all text from this driver license. Return ONLY valid JSON:
+{"name":"full name","docNumber":"license number","issueDate":"YYYY-MM-DD","expiryDate":"YYYY-MM-DD","issuedBy":"state or country","placeOfIssue":"state abbreviation","country":"USA or country","docType":"Driver License","notes":"class, restrictions, address if visible"}`,
+
+  ssn: `Extract info from this SSN/Social Security card. Return ONLY valid JSON:
+{"name":"name on card","docNumber":"SSN number if visible","country":"USA","docType":"SSN/ITIN","issuedBy":"Social Security Administration","notes":"any other visible text"}`,
+
+  aadhaar: `Extract info from this Aadhaar card. Return ONLY valid JSON:
+{"name":"name on card","docNumber":"Aadhaar number (12 digits)","country":"India","docType":"Aadhaar","issuedBy":"UIDAI","placeOfIssue":"state if visible","issueDate":"","expiryDate":"","notes":"DOB if visible, address if visible"}`,
+
+  pan: `Extract info from this PAN card. Return ONLY valid JSON:
+{"name":"name on card","docNumber":"PAN number","country":"India","docType":"PAN Card","issuedBy":"Income Tax Department","notes":"father's name if visible, DOB if visible"}`,
+
+  birth_cert: `Extract info from this birth certificate. Return ONLY valid JSON:
+{"name":"person's full name","issueDate":"date of birth YYYY-MM-DD","issuedBy":"issuing authority","placeOfIssue":"city/state/country of birth","country":"country","docType":"Birth Certificate","notes":"parents names, registration number if visible"}`,
+
+  green_card: `Extract info from this Green Card / Permanent Resident Card. Return ONLY valid JSON:
+{"name":"full name","docNumber":"card/USCIS number","issueDate":"YYYY-MM-DD","expiryDate":"YYYY-MM-DD","issuedBy":"USCIS","country":"USA","docType":"Green Card","notes":"category, country of birth if visible"}`,
+
+  visa: `Extract info from this visa. Return ONLY valid JSON:
+{"name":"full name","docNumber":"visa number","issueDate":"YYYY-MM-DD","expiryDate":"YYYY-MM-DD","issuedBy":"country that issued","placeOfIssue":"consulate or city","country":"passport country","docType":"Visa","notes":"visa type, entries allowed, remarks"}`,
+
+  bank_card: `Extract info from this bank or credit card. Return ONLY valid JSON:
+{"name":"bank or institution name","accountNumber":"last 4 digits only for security","accountType":"Credit Card or Debit - guess from card","notes":"card network (Visa/MC/Amex), expiry month/year on card, cardholder name if visible"}`,
+
+  bank_statement: `Extract info from this bank statement or letter. Return ONLY valid JSON:
+{"name":"bank name","accountNumber":"account number if visible (last 4 only)","accountType":"Checking or Savings - guess","routingNumber":"routing number if visible","website":"bank website if visible","phone":"bank phone if visible","notes":"address, account holder name, statement period"}`,
+
+  check: `Extract info from this check. Return ONLY valid JSON:
+{"name":"bank name printed on check","accountNumber":"account number (last 4 only)","routingNumber":"routing number","notes":"check number, payee if filled out, address on check"}`,
+
+  insurance_card: `Extract info from this insurance card. Return ONLY valid JSON:
+{"name":"insurance company name","policyNumber":"policy or member ID number","policyType":"Health or Auto or Home - guess","coverage":"plan name or type","beneficiary":"insured name","agentPhone":"customer service number if visible","notes":"group number, effective date, copay amounts, any other text"}`,
+
+  policy_doc: `Extract info from this insurance policy document. Return ONLY valid JSON:
+{"name":"insurance company name","policyNumber":"policy number","policyType":"Term Life or Health or Auto etc","coverage":"coverage amount if stated","premium":"premium amount if stated","beneficiary":"beneficiary name if stated","expiryDate":"YYYY-MM-DD renewal date","notes":"key terms, agent name, address"}`,
+
+  medical_card: `Extract info from this medical/insurance card. Return ONLY valid JSON:
+{"name":"title or card type","detail1":"doctor or primary care name if listed","detail2":"phone number","policyNumber":"member ID or policy number","category":"Insurance Card","notes":"plan name, group number, copay, network, all other text"}`,
+
+  vaccination: `Extract info from this vaccination record. Return ONLY valid JSON:
+{"name":"vaccine name or record title","detail1":"patient name","detail2":"healthcare provider or clinic","issueDate":"YYYY-MM-DD date of vaccination","category":"Vaccination","notes":"lot number, doses, next due date, all other text"}`,
+
+  prescription: `Extract info from this prescription. Return ONLY valid JSON:
+{"name":"medication name","detail1":"prescribing doctor","detail2":"pharmacy phone","category":"Medication","notes":"dosage, frequency, refills, pharmacy name, date prescribed"}`,
+
+  deed: `Extract info from this property deed. Return ONLY valid JSON:
+{"name":"property name or address","address":"full property address","category":"Home/Condo","purchasePrice":"price if stated","notes":"parcel number, legal description, grantor/grantee names, recording date"}`,
+
+  mortgage: `Extract info from this mortgage document. Return ONLY valid JSON:
+{"name":"lender/bank name","address":"property address","loanBank":"lender name","loanAccount":"loan number if visible","loanPending":"original loan amount","notes":"interest rate, term, monthly payment, closing date, all other key terms"}`,
+
+  registration: `Extract ALL info from this vehicle registration document. Return ONLY valid JSON:
+{"name":"year make model e.g. 2022 Toyota Camry","make":"year + make + model + trim","color":"vehicle color","year":"year as string","vin":"full VIN number","licensePlate":"plate number","registrationExp":"YYYY-MM-DD expiration","member":"owner name","insuranceProvider":"insurance company if listed","notes":"lienholder, registration fee, any other info"}`,
+
+  title: `Extract info from this vehicle title. Return ONLY valid JSON:
+{"name":"year make model","make":"year make model trim","color":"color","year":"year","vin":"VIN number","licensePlate":"plate if listed","loanBank":"lienholder/bank if any","notes":"odometer, title number, owner name, any other text"}`,
+
+  document: `Extract all readable text and information from this document. Return ONLY valid JSON:
+{"name":"document title or type","category":"Miscellaneous","notes":"complete summary of all information found in the document"}`,
+
+  lease_agreement: `Extract all details from this lease/rental agreement. Return ONLY valid JSON:
+{"name":"property address or unit name","renterName":"full name(s) of tenant(s) on the lease","renterPhone":"tenant phone if visible","renterEmail":"tenant email if visible","leaseStart":"YYYY-MM-DD lease start date","leaseExpiry":"YYYY-MM-DD lease end date","monthlyRent":"monthly rent amount","securityDeposit":"security deposit amount","notes":"landlord name, pets policy, utilities included, any other key terms"}`,
+};
+
+// Field mapping: doctype -> which tab fields to populate
+var SCAN_FIELD_MAP = {
+  docs: ['name','docType','member','country','docNumber','issueDate','expiryDate','issuedBy','placeOfIssue','notes'],
+  bank: ['name','member','country','accountType','accountNumber','routingNumber','customerId','website','username','phone','notes'],
+  insurance: ['name','member','policyType','policyNumber','coverage','premium','beneficiary','agentPhone','expiryDate','notes'],
+  medical: ['name','member','category','detail1','detail2','policyNumber','notes'],
+  property: ['name','member','address','category','purchasePrice','loanBank','loanAccount','loanPending','insuranceProvider','notes'],
+  vehicles: ['name','member','category','make','color','year','vin','licensePlate','registrationExp','loanBank','loanAccount','loanPending','insuranceProvider','notes'],
+  notes: ['name','member','category','notes'],
+  cat_rentalunit: ['name','member','renterName','renterPhone','renterEmail','leaseStart','leaseExpiry','monthlyRent','securityDeposit','entryType','notes'],
+};
+
+function saveApiKey() {
+  var val = (document.getElementById('api-key-inp').value || '').trim();
+  if (!val) { alert('Please enter an API key.'); return; }
+  localStorage.setItem('fvg_apikey', val);
+  updateApiKeyUI();
+  document.getElementById('api-key-inp').value = '';
+}
+function clearApiKey() {
+  localStorage.removeItem('fvg_apikey');
+  updateApiKeyUI();
+}
+function updateApiKeyUI() {
+  var key = localStorage.getItem('fvg_apikey') || '';
+  var banner = document.getElementById('api-key-banner');
+  var label = document.getElementById('api-key-label');
+  var clearBtn = document.getElementById('api-key-clear-btn');
+  var inp = document.getElementById('api-key-inp');
+  if (!banner) return;
+  if (key) {
+    banner.className = 'api-key-banner ok';
+    label.textContent = '✓ API Key saved (' + key.slice(0,8) + '…)';
+    if (clearBtn) clearBtn.style.display = 'inline-block';
+    if (inp) inp.style.display = 'none';
+    banner.querySelector('.api-key-save-btn').style.display = 'none';
+  } else {
+    banner.className = 'api-key-banner';
+    label.textContent = '⚠ API Key needed';
+    if (clearBtn) clearBtn.style.display = 'none';
+    if (inp) inp.style.display = '';
+    banner.querySelector('.api-key-save-btn').style.display = '';
+  }
+}
+function populateScanPersonList() {
+  var dl = document.getElementById('scan-person-list');
+  if (!dl) return;
+  dl.innerHTML = DATA.members.map(function(m){
+    return '<option value="'+esc(m)+'"/>';
+  }).join('');
+}
+function openScanModal() {
+  resetScan();
+  var sel = document.getElementById('scan-target-tab');
+  if (sel) {
+    // Rebuild options to include custom categories
+    var opts = '<option value="docs">🪪 Documents &amp; IDs</option>'
+      +'<option value="bank">🏦 Bank &amp; Finance</option>'
+      +'<option value="insurance">🛡️ Insurance</option>'
+      +'<option value="passwords">🔑 Passwords &amp; Logins</option>'
+      +'<option value="medical">🏥 Medical</option>'
+      +'<option value="property">🏠 Property</option>'
+      +'<option value="vehicles">🚗 Vehicles &amp; Cars</option>'
+      +'<option value="notes">📝 Notes</option>';
+    (DATA.customCategories||[]).forEach(function(cat){
+      opts+='<option value="cat_'+cat.id+'">'+cat.icon+' '+esc(cat.name)+'</option>';
+    });
+    sel.innerHTML=opts;
+    var validTabs = ['docs','bank','insurance','passwords','medical','property','vehicles','notes'];
+    (DATA.customCategories||[]).forEach(function(c){validTabs.push('cat_'+c.id);});
+    var target = validTabs.indexOf(ACTIVE_TAB) >= 0 ? ACTIVE_TAB : 'docs';
+    for (var i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value === target) { sel.selectedIndex = i; break; }
+    }
+  }
+  populateScanPersonList();
+  updateApiKeyUI();
+  onScanTabChange();
+  openModal('scan-modal');
+}
+
+function onScanTabChange() {
+  _scanDocType = '';
+  var tab = document.getElementById('scan-target-tab').value;
+  var builtIn = SCAN_DOC_TYPES[tab] || [{id:'document', label:'📄 Document'}];
+  // Merge in any custom types saved for this tab
+  var custom = (DATA.customScanTypes && DATA.customScanTypes[tab]) || [];
+  var chips = builtIn.concat(custom);
+
+  var h = '';
+  chips.forEach(function(c) {
+    var isCustom = custom.some(function(x){return x.id===c.id;});
+    h += '<button class="scan-type-chip" onclick="setScanDocType(\''+c.id+'\')" data-id="'+c.id+'">'
+      + c.label
+      + (isCustom ? '<span onclick="event.stopPropagation();removeCustomScanType(\''+tab+'\',\''+c.id+'\')" title="Remove" style="margin-left:5px;opacity:0.6;font-size:10px">✕</span>' : '')
+      + '</button>';
+  });
+  // Add custom type button
+  h += '<button class="scan-type-chip" onclick="promptAddScanType(\''+tab+'\')" style="border-style:dashed;color:var(--text3)">＋ Add Type</button>';
+
+  document.getElementById('scan-type-chips').innerHTML = h;
+  if (chips.length) setScanDocType(chips[0].id);
+}
+
+function promptAddScanType(tab) {
+  var name = (prompt('Enter document type name (e.g. "Utility Bill", "Tax Return"):') || '').trim();
+  if (!name) return;
+  var emoji = (prompt('Enter an emoji for it (optional, press OK to skip):') || '').trim();
+  if (!emoji) emoji = '📄';
+  var id = 'custom_' + name.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') + '_' + uid().slice(0,4);
+  var label = emoji + ' ' + name;
+  if (!DATA.customScanTypes) DATA.customScanTypes = {};
+  if (!DATA.customScanTypes[tab]) DATA.customScanTypes[tab] = [];
+  DATA.customScanTypes[tab].push({id:id, label:label});
+  // Also add a generic prompt for this custom type
+  SCAN_PROMPTS[id] = 'Extract all readable information from this "'+name+'" document. Return ONLY valid JSON:\n{"name":"document title or reference number","notes":"complete summary of all text and information found in this document","category":"'+name+'"}';
+  save();
+  onScanTabChange();
+  setScanDocType(id);
+}
+
+function removeCustomScanType(tab, id) {
+  if (!DATA.customScanTypes || !DATA.customScanTypes[tab]) return;
+  DATA.customScanTypes[tab] = DATA.customScanTypes[tab].filter(function(c){return c.id!==id;});
+  save();
+  onScanTabChange();
+}
+
+function setScanDocType(id) {
+  _scanDocType = id;
+  document.querySelectorAll('.scan-type-chip').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.id === id);
+  });
+}
+
+function onScanFileSelect(evt) {
+  var file = evt.target.files[0];
+  if (file) loadScanFile(file);
+}
+
+function onScanDrop(evt) {
+  evt.preventDefault();
+  document.getElementById('scan-drop-zone').classList.remove('drag-over');
+  var file = evt.dataTransfer.files[0];
+  if (file) loadScanFile(file);
+}
+
+function loadScanFile(file) {
+  _scanFile = file;
+  _scanResults = null;
+  _scanAttachment = null;
+  setScanStatus('');
+  document.getElementById('scan-results-area').innerHTML = '';
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    _scanBase64 = dataUrl.split(',')[1];
+    _scanMime = file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+
+    // For images, compress before storing to stay within localStorage limits
+    if (_scanMime.startsWith('image/')) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var MAX = 1200; // max dimension
+        var w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        var compressed = canvas.toDataURL('image/jpeg', 0.82);
+        _scanAttachment = { data: compressed, mime: 'image/jpeg', name: file.name, size: file.size };
+      };
+      img.src = dataUrl;
+    } else {
+      // PDF — store as-is (warn if large)
+      if (file.size > 3 * 1024 * 1024) {
+        alert('⚠ This PDF is ' + formatBytes(file.size) + '. Large files may exceed browser storage limits. Consider using a smaller/compressed PDF.');
+      }
+      _scanAttachment = { data: dataUrl, mime: _scanMime, name: file.name, size: file.size };
+    }
+
+    // Show preview
+    var previewHtml = '';
+    if (_scanMime.startsWith('image/')) {
+      previewHtml = '<div class="scan-preview">'
+        + '<img class="scan-preview-thumb" src="'+dataUrl+'"/>'
+        + '<div class="scan-preview-info"><div class="scan-preview-name">'+esc(file.name)+'</div>'
+        + '<div class="scan-preview-size">'+formatBytes(file.size)+' · Image</div></div>'
+        + '<button class="scan-preview-clear" onclick="clearScanFile()">✕</button></div>';
+    } else {
+      previewHtml = '<div class="scan-preview">'
+        + '<div class="scan-preview-pdf">📄</div>'
+        + '<div class="scan-preview-info"><div class="scan-preview-name">'+esc(file.name)+'</div>'
+        + '<div class="scan-preview-size">'+formatBytes(file.size)+' · PDF</div></div>'
+        + '<button class="scan-preview-clear" onclick="clearScanFile()">✕</button></div>';
+    }
+    document.getElementById('scan-preview-area').innerHTML = previewHtml;
+    document.getElementById('scan-drop-zone').style.display = 'none';
+    document.getElementById('scan-go-btn').style.display = 'inline-block';
+    document.getElementById('scan-save-btn').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearScanFile() {
+  _scanFile = null; _scanBase64 = null; _scanMime = null; _scanResults = null; _scanAttachment = null;
+  document.getElementById('scan-preview-area').innerHTML = '';
+  document.getElementById('scan-drop-zone').style.display = '';
+  document.getElementById('scan-go-btn').style.display = 'none';
+  document.getElementById('scan-save-btn').style.display = 'none';
+  document.getElementById('scan-results-area').innerHTML = '';
+  setScanStatus('');
+  document.getElementById('scan-file-input').value = '';
+}
+
+function resetScan() {
+  _scanFile = null; _scanBase64 = null; _scanMime = null; _scanResults = null; _scanDocType = ''; _scanAttachment = null;
+  var pa = document.getElementById('scan-preview-area');
+  var sa = document.getElementById('scan-status-area');
+  var ra = document.getElementById('scan-results-area');
+  if (pa) pa.innerHTML = '';
+  if (sa) sa.innerHTML = '';
+  if (ra) ra.innerHTML = '';
+  var dz = document.getElementById('scan-drop-zone');
+  if (dz) dz.style.display = '';
+  var gb = document.getElementById('scan-go-btn');
+  var sb = document.getElementById('scan-save-btn');
+  if (gb) gb.style.display = 'none';
+  if (sb) sb.style.display = 'none';
+  var fi = document.getElementById('scan-file-input');
+  if (fi) fi.value = '';
+  var pp = document.getElementById('scan-person');
+  if (pp) pp.value = '';
+}
+
+function setScanStatus(type, msg) {
+  var el = document.getElementById('scan-status-area');
+  if (!el) return;
+  if (!type) { el.innerHTML = ''; return; }
+  var icon = type==='scanning' ? '<div class="scan-spinner"></div>' : type==='success' ? '✓' : '✕';
+  el.innerHTML = '<div class="scan-status '+type+'">'+icon+'<span>'+msg+'</span></div>';
+}
+
+async function runScan() {
+  if (!_scanBase64) return;
+  var tab = document.getElementById('scan-target-tab').value;
+  var prompt = SCAN_PROMPTS[_scanDocType] || SCAN_PROMPTS['document'];
+
+  document.getElementById('scan-go-btn').style.display = 'none';
+  document.getElementById('scan-save-btn').style.display = 'none';
+  document.getElementById('scan-results-area').innerHTML = '';
+  setScanStatus('scanning', 'Reading document with AI…');
+
+  try {
+    var isPdf = _scanMime === 'application/pdf';
+    var contentPart = isPdf
+      ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: _scanBase64 } }
+      : { type: 'image', source: { type: 'base64', media_type: _scanMime, data: _scanBase64 } };
+
+    var apiKey = localStorage.getItem('fvg_apikey') || '';
+    if (!apiKey) throw new Error('No API key set. Please enter your Anthropic API key above.');
+
+    var response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        messages: [{
+          role: 'user',
+          content: [
+            contentPart,
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    var data = await response.json();
+    if (!response.ok) {
+      var errMsg = (data.error && data.error.message) ? data.error.message : ('API error ' + response.status);
+      throw new Error(errMsg);
+    }
+
+    var raw = (data.content || []).map(function(b) { return b.text || ''; }).join('');
+    // Strip markdown code fences if present
+    raw = raw.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+
+    var parsed;
+    try { parsed = JSON.parse(raw); }
+    catch(e) {
+      // Try to extract JSON from within the text
+      var m = raw.match(/\{[\s\S]*\}/);
+      if (m) parsed = JSON.parse(m[0]);
+      else throw new Error('Could not parse AI response as JSON');
+    }
+
+    _scanResults = parsed;
+    setScanStatus('success', 'Document read successfully! Review the fields below, then click Add to Vault.');
+    renderScanResults(tab, parsed);
+    document.getElementById('scan-save-btn').style.display = 'inline-block';
+
+  } catch(err) {
+    setScanStatus('error', 'Scan failed: ' + err.message + '. Please try again or fill in manually.');
+    document.getElementById('scan-go-btn').style.display = 'inline-block';
+  }
+}
+
+function renderScanResults(tab, parsed) {
+  var fieldMap = SCAN_FIELD_MAP[tab] || ['name','notes'];
+  var allCols = getAllCols(tab);
+  var colByKey = {};
+  allCols.forEach(function(c) { colByKey[c.k] = c; });
+
+  var h = '<div class="scan-results"><div class="scan-results-head">Extracted Fields — edit before saving</div>';
+  var hasAny = false;
+
+  // Always show all fields so user can fill blanks too
+  fieldMap.forEach(function(k) {
+    if (k === 'member') return; // handled by the person field above the modal
+    var col = colByKey[k];
+    var label = col ? col.l : k;
+    var val = parsed[k] || '';
+    hasAny = true;
+    h += '<div class="scan-field-row">'
+      + '<div class="scan-field-key">'+esc(label)+'</div>'
+      + '<div class="scan-field-val"><input class="scan-field-input" id="sf-'+k+'" value="'+esc(val)+'" placeholder="'+esc(label)+'"/></div>'
+      + '</div>';
+  });
+
+  // Also show any keys in parsed that aren't in fieldMap
+  Object.keys(parsed).forEach(function(k) {
+    if (fieldMap.indexOf(k) >= 0) return;
+    var val = parsed[k];
+    if (!val) return;
+    hasAny = true;
+    h += '<div class="scan-field-row">'
+      + '<div class="scan-field-key">'+esc(k)+'</div>'
+      + '<div class="scan-field-val"><input class="scan-field-input" id="sf-'+k+'" value="'+esc(val)+'" placeholder="'+esc(k)+'"/></div>'
+      + '</div>';
+  });
+
+  if (!hasAny) h += '<div class="scan-no-match">No fields extracted. The document may be unclear.</div>';
+  h += '</div>';
+  document.getElementById('scan-results-area').innerHTML = h;
+}
+
+// ── SMART SAVE: reads inputs, detects new fields, shows confirm modal ──
+var _pendingSaveData = null; // {tab, rec, newCols}
+
+function saveScanResults() {
+  if (!_scanResults) return;
+  var selEl = document.getElementById('scan-target-tab');
+  if (!selEl) return;
+  var tab = selEl.value;
+  if (!DATA[tab]) DATA[tab] = [];
+
+  var personVal = (document.getElementById('scan-person') ? document.getElementById('scan-person').value : '') || '';
+  var allCols = getAllCols(tab);
+  var existingKeys = {};
+  allCols.forEach(function(c) { existingKeys[c.k] = c; });
+
+  // Build record from all visible inputs
+  var rec = { id: uid() };
+  allCols.forEach(function(col) {
+    var el = document.getElementById('sf-' + col.k);
+    rec[col.k] = el ? el.value : ((_scanResults && _scanResults[col.k]) || '');
+  });
+  if (personVal) rec.member = personVal;
+  if (!rec.name) rec.name = (_scanResults && _scanResults.name) ? _scanResults.name : 'Scanned Document';
+
+  // Find any extra fields from AI response that aren't in existing columns
+  var newCols = [];
+  var skippedKeys = {};
+  Object.keys(_scanResults).forEach(function(k) {
+    if (k === 'member') return;
+    if (existingKeys[k]) return; // already a column
+    var val = document.getElementById('sf-' + k) ? document.getElementById('sf-' + k).value : (_scanResults[k] || '');
+    if (!val) return; // skip empty extras
+    // also skip keys that are already represented by fieldMap
+    var fieldMap = SCAN_FIELD_MAP[tab] || [];
+    if (fieldMap.indexOf(k) >= 0) return;
+    newCols.push({ k: k, label: k.replace(/_/g,' '), val: val, type: 'text', skip: false });
+  });
+
+  _pendingSaveData = { tab: tab, rec: rec, newCols: newCols };
+  buildConfirmModal(tab, rec, newCols, existingKeys);
+  closeModal('scan-modal');
+  openModal('scan-confirm-modal');
+}
+
+function buildConfirmModal(tab, rec, newCols, existingKeys) {
+  var allCols = getAllCols(tab);
+  var fieldMap = SCAN_FIELD_MAP[tab] || ['name'];
+
+  var h = '';
+
+  // Summary line
+  var newCount = newCols.length;
+  h += '<div class="scan-confirm-summary">';
+  h += 'Saving to <strong>' + esc((TAB_META[tab]||{label:tab}).label) + '</strong>. ';
+  if (newCount > 0) {
+    h += '<span style="color:var(--amber)"><strong>' + newCount + ' new column'+(newCount>1?'s':'')+' will be created</strong></span> — review below.';
+  } else {
+    h += 'All fields match existing columns. <span style="color:var(--green)">✓ Ready to save.</span>';
+  }
+  h += '</div>';
+
+  // New columns section — let user rename, change type, or skip
+  if (newCols.length > 0) {
+    h += '<div class="scan-confirm-title">🆕 New Columns to Create</div>';
+    h += '<div class="scan-new-cols-list" id="new-cols-list">';
+    newCols.forEach(function(nc, i) {
+      var prettyLabel = nc.k.replace(/_/g,' ').replace(/\w/g,function(c){return c.toUpperCase();});
+      h += '<div class="scan-new-col-item" id="nci-'+i+'">'
+        + '<span style="font-size:14px">📋</span>'
+        + '<span class="col-name"><input style="border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px;font-family:var(--mono);background:#fff;outline:none;width:140px" id="nc-label-'+i+'" value="'+esc(prettyLabel)+'"/></span>'
+        + '<select class="col-type-sel" id="nc-type-'+i+'">'
+        + '<option value="text">Text</option>'
+        + '<option value="date">Date</option>'
+        + '<option value="secret">Secret 🔒</option>'
+        + '</select>'
+        + '<span style="font-size:11px;color:var(--text3);font-family:var(--mono);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(nc.val)+'">→ '+esc(nc.val.slice(0,30))+(nc.val.length>30?'…':'')+'</span>'
+        + '<button class="col-skip-btn" id="nc-skip-'+i+'" onclick="toggleSkipNewCol('+i+')">Skip</button>'
+        + '</div>';
+    });
+    h += '</div>';
+  }
+
+  // All fields preview
+  h += '<div class="scan-confirm-title" style="margin-top:14px">📄 Fields to Save</div>';
+  h += '<div class="scan-results">';
+
+  // Show name first
+  h += '<div class="scan-field-row existing">'
+    + '<div class="scan-field-key">Name <span class="existing-col-badge">exists</span></div>'
+    + '<div class="scan-field-val" style="padding:9px 10px;font-size:13px;font-weight:600">'+esc(rec.name||'')+'</div>'
+    + '</div>';
+
+  if (rec.member) {
+    h += '<div class="scan-field-row existing">'
+      + '<div class="scan-field-key">Person <span class="existing-col-badge">exists</span></div>'
+      + '<div class="scan-field-val" style="padding:9px 10px;font-size:13px">'+esc(rec.member)+'</div>'
+      + '</div>';
+  }
+
+  fieldMap.forEach(function(k) {
+    if (k === 'name' || k === 'member') return;
+    var val = rec[k];
+    if (!val) return;
+    var col = existingKeys[k];
+    var label = col ? col.l : k;
+    h += '<div class="scan-field-row existing">'
+      + '<div class="scan-field-key">'+esc(label)+' <span class="existing-col-badge">exists</span></div>'
+      + '<div class="scan-field-val" style="padding:9px 10px;font-size:13px">'+esc(val)+'</div>'
+      + '</div>';
+  });
+
+  newCols.forEach(function(nc, i) {
+    if (!nc.val) return;
+    h += '<div class="scan-field-row new-col" id="ncrow-'+i+'">'
+      + '<div class="scan-field-key" id="nclabel-display-'+i+'">'+esc(nc.label)+' <span class="new-col-badge">new</span></div>'
+      + '<div class="scan-field-val" style="padding:9px 10px;font-size:13px">'+esc(nc.val)+'</div>'
+      + '</div>';
+  });
+
+  h += '</div>';
+  document.getElementById('scan-confirm-body').innerHTML = h;
+}
+
+var _skippedNewCols = {};
+function toggleSkipNewCol(i) {
+  _skippedNewCols[i] = !_skippedNewCols[i];
+  var btn = document.getElementById('nc-skip-'+i);
+  var row = document.getElementById('ncrow-'+i);
+  if (_skippedNewCols[i]) {
+    if (btn) { btn.textContent = 'Include'; btn.classList.add('skipped'); }
+    if (row) row.style.opacity = '0.35';
+  } else {
+    if (btn) { btn.textContent = 'Skip'; btn.classList.remove('skipped'); }
+    if (row) row.style.opacity = '';
+  }
+}
+
+function doFinalSave() {
+  if (!_pendingSaveData) return;
+  var tab = _pendingSaveData.tab;
+  var rec = _pendingSaveData.rec;
+  var newCols = _pendingSaveData.newCols;
+
+  if (!DATA[tab]) DATA[tab] = [];
+  if (!DATA.customCols) DATA.customCols = {};
+  if (!DATA.customCols[tab]) DATA.customCols[tab] = [];
+
+  // Create new columns (unless skipped)
+  newCols.forEach(function(nc, i) {
+    if (_skippedNewCols[i]) return;
+    // Get user-edited label and type
+    var labelEl = document.getElementById('nc-label-'+i);
+    var typeEl = document.getElementById('nc-type-'+i);
+    var label = labelEl ? labelEl.value.trim() : nc.label;
+    var type = typeEl ? typeEl.value : 'text';
+    var secret = type === 'secret';
+    var colType = secret ? 'text' : (type === 'date' ? 'date' : 'text');
+    var key = nc.k; // keep original AI key for data consistency
+    // Check it doesn't already exist
+    var allCols = getAllCols(tab);
+    var exists = allCols.some(function(c) { return c.k === key; });
+    if (!exists) {
+      DATA.customCols[tab].push({ k: key, l: label || key, type: colType, secret: secret, custom: true });
+    }
+    // Make sure rec has the value
+    rec[key] = nc.val;
+  });
+
+  // Remove skipped keys from rec
+  newCols.forEach(function(nc, i) {
+    if (_skippedNewCols[i]) delete rec[nc.k];
+  });
+
+  DATA[tab].push(rec);
+
+  // Attach scanned document to the record if available
+  if (_scanAttachment) {
+    if (!DATA.attachments) DATA.attachments = {};
+    DATA.attachments[rec.id] = _scanAttachment;
+    _scanAttachment = null;
+  }
+
+  save();
+  _pendingSaveData = null;
+  _skippedNewCols = {};
+  closeModal('scan-confirm-modal');
+  resetScan();
+  ACTIVE_TAB = tab;
+  renderSidebar();
+  renderTab();
+}
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+function viewAttachment(id) {
+  var att = DATA.attachments && DATA.attachments[id];
+  if (!att) return;
+  if (att.mime && att.mime.startsWith('image/')) {
+    // Open image in a modal overlay
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer';
+    overlay.onclick = function(){document.body.removeChild(overlay);};
+    var img = document.createElement('img');
+    img.src = att.data;
+    img.style.cssText = 'max-width:90vw;max-height:80vh;border-radius:8px;box-shadow:0 4px 32px rgba(0,0,0,0.5)';
+    var label = document.createElement('div');
+    label.style.cssText = 'color:#fff;font-size:12px;opacity:0.7';
+    label.textContent = att.name + ' · ' + formatBytes(att.size) + ' — tap to close';
+    var dlBtn = document.createElement('a');
+    dlBtn.href = att.data;
+    dlBtn.download = att.name;
+    dlBtn.onclick = function(e){e.stopPropagation();};
+    dlBtn.style.cssText = 'background:#c4922a;color:#fff;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none';
+    dlBtn.textContent = '⬇ Download';
+    overlay.appendChild(img);
+    overlay.appendChild(label);
+    overlay.appendChild(dlBtn);
+    document.body.appendChild(overlay);
+  } else {
+    // PDF — open in new tab or download
+    var a = document.createElement('a');
+    a.href = att.data;
+    a.download = att.name || 'document.pdf';
+    a.click();
+  }
+}
+
+
+// ══ MOBILE NAV ══
+function mobileNavTab(tab) {
+  setTab(tab, null);
+  document.querySelectorAll('.mnav-btn').forEach(function(b) { b.classList.remove('active'); });
+  var btn = document.getElementById('mn-'+tab);
+  if (btn) btn.classList.add('active');
+}
+
+function updateMobileNav() {
+  document.querySelectorAll('.mnav-btn').forEach(function(b) { b.classList.remove('active'); });
+  var btn = document.getElementById('mn-'+ACTIVE_TAB);
+  if (btn) btn.classList.add('active');
+}
+
+// ══ MOBILE FILE PICK SHEET ══
+function openMobilePickSheet() {
+  var sheet = document.getElementById('mobile-pick-sheet');
+  var overlay = document.getElementById('mps-overlay');
+  if (sheet) { sheet.style.display = 'block'; setTimeout(function(){ sheet.classList.add('open'); }, 10); }
+  if (overlay) overlay.classList.add('open');
+}
+function closeMobilePickSheet() {
+  var sheet = document.getElementById('mobile-pick-sheet');
+  var overlay = document.getElementById('mps-overlay');
+  if (sheet) { sheet.classList.remove('open'); setTimeout(function(){ sheet.style.display=''; }, 320); }
+  if (overlay) overlay.classList.remove('open');
+}
+function onMobileFilePick(evt) {
+  closeMobilePickSheet();
+  var file = evt.target.files[0];
+  if (file) loadScanFile(file);
+  evt.target.value = '';
+}
+
+// Detect mobile and patch the drop zone click to open sheet instead
+function isMobile() {
+  return window.innerWidth <= 700 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+// Override drop zone click on mobile
+document.addEventListener('DOMContentLoaded', function() {
+  // Patch drop zone — on mobile always open the pick sheet instead of native file dialog
+  document.addEventListener('click', function(e) {
+    var dz = document.getElementById('scan-drop-zone');
+    if (!dz) return;
+    if (isMobile() && (dz.contains(e.target) || e.target === dz)) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      openMobilePickSheet();
+    }
+  }, true);
+
+  // Update drop zone title based on device
+  var title = document.getElementById('drop-zone-title');
+  if (title && isMobile()) title.textContent = 'Tap to choose file';
+  else if (title) title.textContent = 'Drop file here or click to browse';
+
+  // Also patch the hidden file input inside drop zone so it doesn't fire on mobile
+  var scanInput = document.getElementById('scan-file-input');
+  if (scanInput && isMobile()) {
+    scanInput.style.display = 'none'; // hide it on mobile; pick sheet handles file access
+  }
+});
+
+// Patch openScanModal to update mobile nav
+var _origOpenScanModal = openScanModal;
+openScanModal = function() {
+  _origOpenScanModal();
+};
+
+// Patch renderTab to update mobile nav highlight
+var _origRenderTab = renderTab;
+renderTab = function() {
+  _origRenderTab();
+  updateMobileNav();
+};
+
+// ══ MODAL UTILS ══
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.addEventListener('click',function(e){
+  if(e.target.classList.contains('modal-overlay'))closeModal(e.target.id);
+  // close ctx menu
+  var cm=document.getElementById('ctx-menu');
+  if(cm&&!cm.contains(e.target))cm.classList.remove('open');
+});
+</script>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-nav" id="mobile-nav">
+  <button class="mnav-btn" onclick="mobileNavTab('docs')" id="mn-docs">
+    <span class="mico">🪪</span><span>Docs</span>
+  </button>
+  <button class="mnav-btn" onclick="mobileNavTab('bank')" id="mn-bank">
+    <span class="mico">🏦</span><span>Bank</span>
+  </button>
+  <button class="mnav-btn" onclick="mobileNavTab('vehicles')" id="mn-vehicles">
+    <span class="mico">🚗</span><span>Cars</span>
+  </button>
+  <button class="mnav-btn" onclick="mobileNavTab('medical')" id="mn-medical">
+    <span class="mico">🏥</span><span>Medical</span>
+  </button>
+  <button class="mnav-btn" onclick="mobileNavTab('notes')" id="mn-more">
+    <span class="mico">☰</span><span>More</span>
+  </button>
+</nav>
+
+<!-- SCAN FAB (mobile) -->
+<button class="mnav-scan-fab" onclick="openScanModal()" title="Scan Document">📷</button>
+
+<!-- MOBILE FILE PICK SHEET -->
+<div class="mps-overlay" id="mps-overlay" onclick="closeMobilePickSheet()"></div>
+<div class="mobile-pick-sheet" id="mobile-pick-sheet">
+  <div class="mps-handle"></div>
+  <div class="mps-title">Choose Document Source</div>
+  <div class="mps-grid">
+
+    <label class="mps-btn">
+      <span class="mps-ico">📸</span>
+      <span>Camera</span>
+      <input type="file" accept="image/*" capture="environment" onchange="onMobileFilePick(event)"/>
+    </label>
+
+    <label class="mps-btn">
+      <span class="mps-ico">🖼️</span>
+      <span>Photos</span>
+      <input type="file" accept="image/*" onchange="onMobileFilePick(event)"/>
+    </label>
+
+    <label class="mps-btn" id="mps-files-btn">
+      <span class="mps-ico">📁</span>
+      <span>Files &amp; Downloads</span>
+      <input type="file" accept="image/*,.pdf,application/pdf" onchange="onMobileFilePick(event)"/>
+    </label>
+
+    <label class="mps-btn">
+      <span class="mps-ico">📄</span>
+      <span>PDF Only</span>
+      <input type="file" accept=".pdf,application/pdf" onchange="onMobileFilePick(event)"/>
+    </label>
+
+    <label class="mps-btn">
+      <span class="mps-ico">💬</span>
+      <span>WhatsApp</span>
+      <input type="file" accept="image/*,.pdf" onchange="onMobileFilePick(event)"/>
+    </label>
+
+    <label class="mps-btn">
+      <span class="mps-ico">📂</span>
+      <span>Any File</span>
+      <input type="file" accept="*/*" onchange="onMobileFilePick(event)"/>
+    </label>
+
+  </div>
+  <div style="font-size:11px;color:#999;text-align:center;padding:0 16px 4px;line-height:1.5">
+    <b>Android:</b> tap Files &amp; Downloads → browse Downloads folder<br/>
+    <b>iPhone:</b> tap Files &amp; Downloads → Browse → On My iPhone / iCloud
+  </div>
+  <button class="mps-cancel" onclick="closeMobilePickSheet()">Cancel</button>
+</div>
+
+
+<script>
+// ══ PWA SETUP ══
+(function() {
+  // Generate inline SVG icon as data URL (gold lock icon)
+  var iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="100" fill="#c4922a"/><rect x="156" y="256" width="200" height="160" rx="16" fill="white"/><path d="M186 256v-70a70 70 0 0 1 140 0v70" stroke="white" stroke-width="28" fill="none" stroke-linecap="round"/><circle cx="256" cy="330" r="20" fill="#c4922a"/></svg>';
+  var iconUrl = 'data:image/svg+xml,' + encodeURIComponent(iconSvg);
+
+  // Set apple touch icon
+  var appleIcon = document.getElementById('apple-icon');
+  if (appleIcon) appleIcon.href = iconUrl;
+
+  // Build inline manifest
+  var manifest = {
+    name: 'Family Vault',
+    short_name: 'FamilyVault',
+    description: 'Secure family document vault',
+    start_url: window.location.href,
+    display: 'standalone',
+    orientation: 'portrait-primary',
+    background_color: '#f7f6f2',
+    theme_color: '#c4922a',
+    icons: [
+      { src: iconUrl, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+    ],
+    categories: ['finance', 'productivity', 'utilities']
+  };
+  var manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+  var manifestUrl = URL.createObjectURL(manifestBlob);
+  var manifestLink = document.getElementById('pwa-manifest');
+  if (manifestLink) manifestLink.href = manifestUrl;
+
+  // Service worker: only register when served from http/https (not file://)
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    // Write SW as a data URI workaround — inject as a real script element
+    var swScript = 'var CACHE="fv-v8"; self.addEventListener("install",function(e){self.skipWaiting();}); self.addEventListener("activate",function(e){e.waitUntil(clients.claim());}); self.addEventListener("fetch",function(e){e.respondWith(caches.open(CACHE).then(function(c){return c.match(e.request).then(function(r){return r||fetch(e.request).then(function(resp){c.put(e.request,resp.clone());return resp;});});}));});';
+    try {
+      var swBlob = new Blob([swScript], {type: 'application/javascript'});
+      var swUrl = URL.createObjectURL(swBlob);
+      navigator.serviceWorker.register(swUrl).catch(function(){});
+    } catch(e) {}
+  }
+
+  // ── INSTALL PROMPT HANDLING ──
+  var _deferredInstall = null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    _deferredInstall = e;
+    showInstallBanner();
+  });
+
+  window.addEventListener('appinstalled', function() {
+    hideInstallBanner();
+    _deferredInstall = null;
+  });
+
+  function showInstallBanner() {
+    var banner = document.getElementById('install-banner');
+    if (banner) banner.style.display = 'flex';
+  }
+  function hideInstallBanner() {
+    var banner = document.getElementById('install-banner');
+    if (banner) banner.style.display = 'none';
+  }
+
+  window.triggerInstall = function() {
+    if (_deferredInstall) {
+      _deferredInstall.prompt();
+      _deferredInstall.userChoice.then(function(result) {
+        if (result.outcome === 'accepted') hideInstallBanner();
+        _deferredInstall = null;
+      });
+    } else {
+      // Fallback instructions
+      document.getElementById('install-fallback').style.display = 'block';
+    }
+  };
+
+  window.dismissInstall = function() {
+    hideInstallBanner();
+    localStorage.setItem('fvg_install_dismissed', '1');
+  };
+
+  // Check if already installed (standalone mode)
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+  if (isStandalone) { hideInstallBanner(); return; }
+
+  // Don't show if dismissed before
+  if (localStorage.getItem('fvg_install_dismissed')) { hideInstallBanner(); return; }
+
+  // If no install prompt fires within 2s, show manual instructions automatically
+  setTimeout(function() {
+    if (!_deferredInstall) {
+      var banner = document.getElementById('install-banner');
+      if (banner && banner.style.display !== 'none') {
+        // Show manual steps directly
+        document.getElementById('install-fallback').style.display = 'block';
+        showInstallBanner();
+      }
+    }
+  }, 2000);
+})();
+</script>
+
+</body>
+</html>

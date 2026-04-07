@@ -365,6 +365,19 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .twofa-slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform 0.2s;}
 .twofa-toggle input:checked+.twofa-slider:before{transform:translateX(18px);}
 
+/* GOOGLE DRIVE LINK */
+.gdrive-modal{max-width:480px;}
+.gdrive-preview{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:12px;background:var(--surface2);}
+.gdrive-preview iframe{width:100%;height:340px;border:none;display:block;}
+.gdrive-preview-placeholder{padding:40px 20px;text-align:center;color:var(--text3);font-size:13px;}
+.gdrive-link-row{display:flex;gap:8px;align-items:center;}
+.gdrive-link-row input{flex:1;}
+.gdrive-link-open{padding:8px 14px;font-size:12px;font-weight:600;background:var(--blue);color:#fff;border:none;border-radius:var(--r);cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:5px;}
+.gdrive-link-open:hover{opacity:0.88;}
+.gdrive-hint{font-size:11px;color:var(--text3);margin-top:8px;line-height:1.6;}
+.gdrive-hint a{color:var(--gold);}
+.gdrive-badge{display:inline-flex;align-items:center;gap:4px;background:#e8f0fe;color:#1a73e8;border-radius:10px;padding:1px 8px;font-size:10px;font-weight:600;font-family:var(--mono);}
+
 /* INSTALL BANNER */
 .install-banner{
   display:none;align-items:center;gap:10px;
@@ -583,6 +596,35 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="modal-foot">
       <button class="btn btn-cancel" onclick="closeModal('scan-confirm-modal')">Back</button>
       <button class="btn btn-primary" onclick="doFinalSave()">💾 Save to Vault</button>
+    </div>
+  </div>
+</div>
+
+<!-- GOOGLE DRIVE LINK MODAL -->
+<div class="modal-overlay" id="gdrive-modal">
+  <div class="modal gdrive-modal">
+    <h2>🔗 Link Google Drive Document</h2>
+    <div class="fg">
+      <label>Google Drive Link</label>
+      <div class="gdrive-link-row">
+        <input type="url" id="gdrive-url-input" placeholder="Paste Google Drive link here…" oninput="onGdriveInput()" onkeydown="if(event.key==='Enter')saveGdriveLink()"/>
+        <a id="gdrive-open-btn" class="gdrive-link-open" target="_blank" style="display:none">↗ Open</a>
+      </div>
+      <div class="gdrive-hint">
+        Paste any Google Drive link — Docs, Sheets, PDFs, images, etc.<br/>
+        <a href="https://drive.google.com" target="_blank">Open Google Drive</a> → right-click file → <strong>Share</strong> → <strong>Copy link</strong>.<br/>
+        For preview to work, set sharing to <strong>"Anyone with the link can view"</strong>.
+      </div>
+    </div>
+    <div class="fg">
+      <label>Label (optional)</label>
+      <input type="text" id="gdrive-label-input" placeholder="e.g. Passport Scan, Lease Agreement…"/>
+    </div>
+    <div id="gdrive-preview-area"></div>
+    <div class="modal-foot">
+      <button class="btn btn-cancel" onclick="closeModal('gdrive-modal')">Cancel</button>
+      <button class="btn btn-danger" id="gdrive-remove-btn" onclick="removeGdriveLink()" style="display:none">Remove Link</button>
+      <button class="btn btn-primary" onclick="saveGdriveLink()">💾 Save Link</button>
     </div>
   </div>
 </div>
@@ -876,6 +918,7 @@ function loadData(){
     if(!DATA.customCols)DATA.customCols={};
     if(!DATA.customScanTypes)DATA.customScanTypes={};
     if(!DATA.attachments)DATA.attachments={};
+    if(!DATA.driveLinks)DATA.driveLinks={};
     // Re-register custom scan type prompts after page reload
     Object.keys(DATA.customScanTypes||{}).forEach(function(tab){
       (DATA.customScanTypes[tab]||[]).forEach(function(c){
@@ -1128,6 +1171,9 @@ function renderRow(r,tab,cols,isEditing){
     if(hasAttachment){
       h+='<button class="icon-btn" title="View scanned document" onclick="viewAttachment(\''+id+'\')" style="color:var(--blue)">📎</button>';
     }
+    // Show Drive link button
+    var hasDrive = DATA.driveLinks && DATA.driveLinks[id];
+    h+='<button class="icon-btn" title="'+(hasDrive?'View Google Drive document':'Link Google Drive document')+'" onclick="openGdriveModal(\''+tab+'\',\''+id+'\')" style="color:'+(hasDrive?'#1a73e8':'var(--text3)')+'">🔗</button>';
     h+='<button class="icon-btn" title="Edit" onclick="startRowEdit(\''+tab+'\',\''+id+'\')">✏️</button>';
     h+='<button class="icon-btn del-btn" title="Delete" onclick="askDelete(\''+tab+'\',\''+id+'\')">🗑️</button>';
   }
@@ -1402,6 +1448,9 @@ function confirmDelete(){
     // Also remove any attachment for this record
     if(DATA.attachments&&DATA.attachments[_delId]){
       delete DATA.attachments[_delId];
+    }
+    if(DATA.driveLinks&&DATA.driveLinks[_delId]){
+      delete DATA.driveLinks[_delId];
     }
     save();
   }
@@ -2496,6 +2545,92 @@ function formatBytes(b) {
   if (b < 1024) return b + ' B';
   if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
   return (b/1048576).toFixed(1) + ' MB';
+}
+
+// ══ GOOGLE DRIVE LINKS ══
+var _gdriveRowId=null;var _gdriveTab=null;
+
+function openGdriveModal(tab,id){
+  _gdriveTab=tab;_gdriveRowId=id;
+  var existing=(DATA.driveLinks&&DATA.driveLinks[id])||{};
+  document.getElementById('gdrive-url-input').value=existing.url||'';
+  document.getElementById('gdrive-label-input').value=existing.label||'';
+  document.getElementById('gdrive-remove-btn').style.display=existing.url?'':'none';
+  updateGdrivePreview(existing.url||'');
+  openModal('gdrive-modal');
+}
+
+function gdriveToPreviewUrl(url){
+  if(!url)return null;
+  // Handle various Drive URL formats
+  var fileId=null;
+  var m=url.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+  if(m)fileId=m[1];
+  if(!fileId){m=url.match(/id=([a-zA-Z0-9_-]{10,})/);if(m)fileId=m[1];}
+  if(!fileId){m=url.match(/\/file\/d\/([a-zA-Z0-9_-]{10,})/);if(m)fileId=m[1];}
+  if(fileId)return 'https://drive.google.com/file/d/'+fileId+'/preview';
+  // Google Docs/Sheets/Slides
+  var docM=url.match(/docs\.google\.com\/(document|spreadsheets|presentation)\/d\/([a-zA-Z0-9_-]{10,})/);
+  if(docM)return 'https://docs.google.com/'+docM[1]+'/d/'+docM[2]+'/preview';
+  return null;
+}
+
+function onGdriveInput(){
+  var url=document.getElementById('gdrive-url-input').value.trim();
+  updateGdrivePreview(url);
+  var openBtn=document.getElementById('gdrive-open-btn');
+  if(url&&openBtn){openBtn.href=url;openBtn.style.display='';}
+  else if(openBtn){openBtn.style.display='none';}
+}
+
+function updateGdrivePreview(url){
+  var area=document.getElementById('gdrive-preview-area');
+  if(!area)return;
+  var previewUrl=gdriveToPreviewUrl(url);
+  if(previewUrl){
+    area.innerHTML='<div class="gdrive-preview"><iframe src="'+esc(previewUrl)+'" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups"></iframe></div>';
+  } else if(url){
+    area.innerHTML='<div class="gdrive-preview"><div class="gdrive-preview-placeholder">📄 Preview not available for this link type.<br/>The document will open in Google Drive when clicked.</div></div>';
+  } else {
+    area.innerHTML='';
+  }
+}
+
+function saveGdriveLink(){
+  var url=(document.getElementById('gdrive-url-input').value||'').trim();
+  var label=(document.getElementById('gdrive-label-input').value||'').trim();
+  if(!url){alert('Please paste a Google Drive link.');return;}
+  if(!url.includes('google.com')&&!url.includes('drive.google')){
+    if(!confirm('This doesn\'t look like a Google Drive link. Save anyway?'))return;
+  }
+  if(!DATA.driveLinks)DATA.driveLinks={};
+  DATA.driveLinks[_gdriveRowId]={url:url,label:label,savedAt:new Date().toISOString()};
+  save();
+  closeModal('gdrive-modal');
+  // Refresh the row in place
+  var tab=_gdriveTab;var id=_gdriveRowId;
+  var recs=DATA[tab]||[];
+  var r=recs.find(function(x){return x.id===id;});
+  if(r){
+    var cols=getVisibleCols(tab);
+    var row=document.getElementById('row-'+id);
+    if(row){var tmp=document.createElement('table');tmp.innerHTML='<tbody>'+renderRow(r,tab,cols,false)+'</tbody>';var nr=tmp.querySelector('tr');if(nr)row.replaceWith(nr);}
+  }
+}
+
+function removeGdriveLink(){
+  if(!confirm('Remove the Google Drive link from this record?'))return;
+  if(DATA.driveLinks&&DATA.driveLinks[_gdriveRowId])delete DATA.driveLinks[_gdriveRowId];
+  save();
+  closeModal('gdrive-modal');
+  var tab=_gdriveTab;var id=_gdriveRowId;
+  var recs=DATA[tab]||[];
+  var r=recs.find(function(x){return x.id===id;});
+  if(r){
+    var cols=getVisibleCols(tab);
+    var row=document.getElementById('row-'+id);
+    if(row){var tmp=document.createElement('table');tmp.innerHTML='<tbody>'+renderRow(r,tab,cols,false)+'</tbody>';var nr=tmp.querySelector('tr');if(nr)row.replaceWith(nr);}
+  }
 }
 
 function viewAttachment(id) {

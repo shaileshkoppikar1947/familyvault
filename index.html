@@ -1607,6 +1607,25 @@ function renderSettings(){
     +'<div class="fg"><label>New Password</label><input type="password" id="chpw1" placeholder="New password"/></div>'
     +'<div class="fg"><label>Confirm</label><input type="password" id="chpw2" placeholder="Confirm"/></div>'
     +'</div><button class="tbtn gold" onclick="changePw()">Update Password</button></div>';
+  // Storage usage card
+  var attCount=Object.keys(DATA.attachments||{}).length;
+  var attSize=0;
+  Object.values(DATA.attachments||{}).forEach(function(a){if(a&&a.data)attSize+=a.data.length;});
+  var attSizeKB=Math.round(attSize/1024);
+  var storageUsed='?';
+  try{var raw=localStorage.getItem(VAULT_KEY)||'';storageUsed=Math.round(raw.length/1024)+'KB';}catch(e){}
+  h+='<div class="settings-card" style="border-color:rgba(196,122,26,0.3)">'
+    +'<h3>💾 Storage Usage</h3>'
+    +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7">'
+    +'Total vault size: <strong>'+storageUsed+'</strong> of ~5MB browser limit.<br/>'
+    +'Scanned documents stored: <strong>'+attCount+' files ('+attSizeKB+'KB)</strong><br/>'
+    +'<span style="color:var(--text3)">Tip: Use 🔗 Google Drive links instead of scanning — zero storage used!</span>'
+    +'</p>'
+    +(attCount>0
+      ?'<button class="tbtn red" onclick="clearScannedAttachments()" style="margin-right:8px">🗑️ Clear All Scanned Docs ('+attCount+')</button>'
+      :'<span style="font-size:12px;color:var(--green)">✓ No scanned documents stored</span>')
+    +'</div>';
+
   h+='<div class="settings-card" style="background:var(--red-l);border-color:rgba(176,42,26,0.2)">'
     +'<h3 style="color:var(--red)">⚠ Danger Zone</h3>'
     +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px">Clear all vault data. Export first.</p>'
@@ -1828,8 +1847,20 @@ function otpKey(event,idx){
 }
 function clearAll(){
   if(!confirm('Delete ALL data? Export first!'))return;
-  DATA={members:['Shailesh Koppikar','Anu Kumble','Ria Koppikar','Sunder Koppikar','Nalini Koppikar'],customCategories:[],hiddenCols:{},customCols:{},docs:[],bank:[],insurance:[],passwords:[],medical:[],property:[],vehicles:[],notes:[]};
+  DATA={members:['Shailesh Koppikar','Anu Kumble','Ria Koppikar','Sunder Koppikar','Nalini Koppikar'],customCategories:[],hiddenCols:{},customCols:{},docs:[],bank:[],insurance:[],passwords:[],medical:[],property:[],vehicles:[],notes:[],attachments:{},driveLinks:{}};
   save();ACTIVE_TAB='docs';renderSidebar();renderTab();
+}
+
+function clearScannedAttachments(){
+  var count=Object.keys(DATA.attachments||{}).length;
+  if(!count){alert('No scanned documents to clear.');return;}
+  if(!confirm('Remove all '+count+' scanned document(s) from storage?\n\nYour records and all other data are kept — only the stored file images/PDFs are removed.\n\nTip: Use 🔗 Drive links instead to keep documents without using storage.'))return;
+  DATA.attachments={};
+  save();
+  var freed=0;
+  try{var raw=localStorage.getItem(VAULT_KEY)||'';freed=Math.round(raw.length/1024);}catch(e){}
+  alert('✅ Scanned documents cleared!\nVault size is now ~'+freed+'KB.\n\nYou can now scan and save new documents again.');
+  renderSettings();
 }
 
 // ══ EXCEL EXPORT ══

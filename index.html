@@ -1655,10 +1655,13 @@ function renderSettings(){
     +'</p>'
     +(gsConnected
       ?'<div style="background:var(--green-l);border:1px solid rgba(26,122,74,0.2);border-radius:var(--r);padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--green)">✅ Connected — syncing automatically</div>'
-        +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+        +'<div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7">📱 <strong>Connect your phone or wife\'s device</strong> — tap the button below to generate a QR code. Just scan it on the other device — no typing needed!</div>'
+        +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'
+        +'<button class="tbtn gold" onclick="showSyncQR()">📱 Connect Another Device (QR)</button>'
         +'<button class="tbtn" onclick="gsSyncNow()" style="border-color:var(--green);color:var(--green)">↻ Sync Now</button>'
         +'<button class="tbtn red" onclick="gsDisconnect()">Disconnect</button>'
         +'</div>'
+        +'<div id="sync-qr-area"></div>'
       :'<details style="font-size:12px;color:var(--text2);margin-bottom:12px">'
         +'<summary style="cursor:pointer;font-weight:600;color:var(--text);margin-bottom:6px">Setup steps (2 minutes, free)</summary>'
         +'<ol style="padding-left:18px;line-height:2.2;margin-top:6px">'
@@ -1669,13 +1672,15 @@ function renderSettings(){
         +'<li>Paste below → click Connect</li>'
         +'</ol>'
         +'</details>'
+        +'<div style="background:var(--blue-l);border:1px solid rgba(30,95,166,0.2);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--blue)">📱 <strong>Already connected on another device?</strong> Use that device to generate a QR code (Settings → Cloud Sync → Connect Another Device) and scan it here instead of typing.</div>'
         +'<div class="fg"><label>GitHub Personal Access Token (gist scope only)</label>'
         +'<input type="password" id="gs-token-inp" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"/>'
         +'</div>'
         +'<div class="fg"><label>Gist ID <span style="font-weight:400;color:var(--text3)">(leave blank to create new — or paste existing ID to join)</span></label>'
         +'<input type="text" id="gs-gistid-inp" placeholder="0ce62064732d85dd5305f6a004b13182 (optional)"/>'
         +'</div>'
-        +'<button class="tbtn gold" onclick="gsConnect()">☁ Connect & Sync</button>')
+        +'<button class="tbtn gold" onclick="gsConnect()">☁ Connect & Sync</button>'
+        +'<div id="sync-qr-area" style="margin-top:12px"></div>')
     +'</div>';
     +'<h3 style="color:var(--red)">⚠ Danger Zone</h3>'
     +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px">Clear all vault data. Export first.</p>'
@@ -2965,6 +2970,56 @@ function gsDisconnect(){
   renderSettings();
 }
 
+// Generate QR code containing token+gistId so mobile can scan to connect instantly
+function showSyncQR(){
+  var cfg=gsGetConfig();
+  if(!cfg.token||!cfg.gistId){alert('Not connected yet.');return;}
+  var area=document.getElementById('sync-qr-area');
+  if(!area)return;
+
+  // Encode as a special URL that the vault recognises
+  var payload=btoa(JSON.stringify({token:cfg.token,gistId:cfg.gistId}));
+  var connectUrl=window.location.origin+window.location.pathname+'?syncsetup='+payload;
+  var qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(connectUrl);
+
+  // Check if already showing — toggle off
+  if(area.innerHTML){area.innerHTML='';return;}
+
+  area.innerHTML=
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px;text-align:center;margin-top:8px">'
+    +'<div style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--text)">📱 Scan this on your phone / another device</div>'
+    +'<img src="'+esc(qrUrl)+'" width="200" height="200" style="border:6px solid #fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.15)" alt="Sync QR Code"/>'
+    +'<div style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6">Open Family Vault on the other device → Settings → Cloud Sync<br/>then tap <strong>Scan QR from this device</strong><br/>OR just open the camera app and scan — it connects automatically!</div>'
+    +'<div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'
+    +'<button class="tbtn" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+connectUrl+'\').then(function(){alert(\'Link copied! Paste it in the browser on your other device.\')})">📋 Copy Link Instead</button>'
+    +'<button class="tbtn" onclick="document.getElementById(\'sync-qr-area\').innerHTML=\'\'">Hide QR</button>'
+    +'</div>'
+    +'<div style="font-size:11px;color:var(--red);margin-top:8px;font-weight:600">⚠ Keep this QR private — it contains your sync credentials</div>'
+    +'</div>';
+}
+
+// Auto-connect from QR scan URL
+function checkSyncSetupURL(){
+  var params=new URLSearchParams(window.location.search);
+  var setup=params.get('syncsetup');
+  if(!setup)return;
+  try{
+    var cfg=JSON.parse(atob(setup));
+    if(!cfg.token||!cfg.gistId)return;
+    // Clean URL
+    window.history.replaceState({},'',window.location.pathname);
+    // Ask user to confirm
+    if(confirm('📱 Connect cloud sync from QR code?\n\nThis will sync your vault with the shared data immediately.')){
+      gsSaveConfig({token:cfg.token,gistId:cfg.gistId,user:'shared'});
+      gsSetUI('busy','Loading vault from cloud…');
+      gsPull().then(function(){
+        alert('✅ Connected! Your vault data has been loaded.');
+        renderSettings();
+      });
+    }
+  }catch(e){console.error('syncsetup parse error',e);}
+}
+
 var _origSave=save;
 save=function(){
   _origSave();
@@ -2975,6 +3030,7 @@ save=function(){
 var _origShowApp=showApp;
 showApp=function(){
   _origShowApp();
+  checkSyncSetupURL();
   var cfg=gsGetConfig();
   if(cfg.token&&cfg.gistId){
     gsSetUI('busy','Loading from cloud…');

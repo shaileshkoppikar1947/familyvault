@@ -281,7 +281,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .mobile-nav{
   display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;
   background:var(--surface);border-top:1px solid var(--border);
-  display:none;grid-template-columns:repeat(5,1fr);
+  display:none;grid-template-columns:repeat(6,1fr);
   padding:6px 0 max(6px,env(safe-area-inset-bottom));
 }
 .mnav-btn{
@@ -2724,7 +2724,7 @@ function mobileNavTab(tab) {
   setTab(tab, null);
   document.querySelectorAll('.mnav-btn').forEach(function(b) { b.classList.remove('active'); });
   var btn = document.getElementById('mn-'+tab);
-  if (btn) btn.classList.add('active');
+  if(btn) btn.classList.add('active');
 }
 
 function updateMobileNav() {
@@ -2965,8 +2965,11 @@ showApp=function(){
   <button class="mnav-btn" onclick="mobileNavTab('medical')" id="mn-medical">
     <span class="mico">🏥</span><span>Medical</span>
   </button>
-  <button class="mnav-btn" onclick="mobileNavTab('notes')" id="mn-more">
-    <span class="mico">☰</span><span>More</span>
+  <button class="mnav-btn" onclick="mobileNavTab('notes')" id="mn-notes">
+    <span class="mico">📝</span><span>Notes</span>
+  </button>
+  <button class="mnav-btn" onclick="mobileNavTab('settings')" id="mn-settings">
+    <span class="mico">⚙️</span><span>Settings</span>
   </button>
 </nav>
 

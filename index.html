@@ -1838,6 +1838,37 @@ function renderSettings(){
     +'<h3 style="color:var(--red)">⚠ Danger Zone</h3>'
     +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px">Clear all vault data. Export first.</p>'
     +'<button class="tbtn red" onclick="clearAll()">Clear All Data</button></div>';
+  // Drive Links Backup card
+  var dlCount=Object.keys(DATA.driveLinks||{}).length;
+  h+='<div class="settings-card" style="border-color:rgba(30,95,166,0.3)">'
+    +'<h3>🔗 Google Drive Links</h3>'
+    +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7">'
+    +'You have <strong>'+dlCount+' Drive link'+(dlCount===1?'':'s')+'</strong> saved across your vault records.<br/>'
+    +'These are included in your Excel export and restored on import. Use the buttons below to back up or restore just the links.</p>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'
+    +'<button class="tbtn" onclick="exportDriveLinksJSON()" style="border-color:var(--blue);color:var(--blue)">⬇ Backup Links (JSON)</button>'
+    +'<label class="tbtn" style="cursor:pointer;border-color:var(--green);color:var(--green)">⬆ Restore Links (JSON)<input type="file" accept=".json" style="display:none" onchange="importDriveLinksJSON(event)"/></label>'
+    +'</div>'
+    +(dlCount>0
+      ?'<details style="font-size:11px;color:var(--text3);margin-top:4px"><summary style="cursor:pointer">View saved links ('+dlCount+')</summary>'
+        +'<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px" id="drive-links-list">'
+        +Object.entries(DATA.driveLinks||{}).map(function(e){
+            var id=e[0],dl=e[1];
+            var name='';
+            ['docs','bank','insurance','passwords','medical','property','vehicles','notes'].concat((DATA.customCategories||[]).map(function(c){return 'cat_'+c.id;})).forEach(function(tab){
+              var r=(DATA[tab]||[]).find(function(x){return x.id===id;});
+              if(r&&r.name)name=r.name;
+            });
+            return '<div style="background:var(--surface2);border-radius:var(--r);padding:8px 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+              +'<span style="font-size:12px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(name||id)+'</span>'
+              +(dl.label?'<span style="font-size:11px;color:var(--text3)">'+esc(dl.label)+'</span>':'')
+              +'<a href="'+esc(dl.url)+'" target="_blank" class="tbtn" style="font-size:11px;padding:4px 10px;border-color:var(--blue);color:var(--blue);text-decoration:none">↗ Open</a>'
+              +'</div>';
+          }).join('')
+        +'</div></details>'
+      :'<div style="font-size:12px;color:var(--text3)">No Drive links saved yet. Use the 🔗 button on any record to add one.</div>')
+    +'</div>';
+
   document.getElementById('main-content').innerHTML=h;
   renderMemberList();
 }
@@ -2082,6 +2113,28 @@ function exportExcel(){
 
   var mws=XLSX.utils.aoa_to_sheet([['Members']].concat(DATA.members.map(function(m){return [m];})));
   XLSX.utils.book_append_sheet(wb,mws,'Members');
+
+  // Export Drive Links as a sheet so they survive export/import
+  var driveLinks=DATA.driveLinks||{};
+  var dlRows=[['Record ID','URL','Label','Saved At']];
+  // Also store a human-readable name alongside the ID
+  var allTabsForLinks=['docs','bank','insurance','passwords','medical','property','vehicles','notes'];
+  (DATA.customCategories||[]).forEach(function(cat){allTabsForLinks.push('cat_'+cat.id);});
+  Object.keys(driveLinks).forEach(function(id){
+    var dl=driveLinks[id];if(!dl||!dl.url)return;
+    var name='';
+    allTabsForLinks.forEach(function(tab){
+      var r=(DATA[tab]||[]).find(function(x){return x.id===id;});
+      if(r&&r.name)name=r.name;
+    });
+    dlRows.push([id, dl.url, dl.label||'', dl.savedAt||'', name]);
+  });
+  if(dlRows.length>1){
+    var dlws=XLSX.utils.aoa_to_sheet(dlRows);
+    dlws['!cols']=[{wch:36},{wch:80},{wch:30},{wch:20},{wch:40}];
+    XLSX.utils.book_append_sheet(wb,dlws,'DriveLinks');
+  }
+
   XLSX.writeFile(wb,'FamilyVault_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
@@ -2111,9 +2164,31 @@ function importExcel(evt){
           if(!exists){DATA[tab]=DATA[tab]||[];DATA[tab].push(rec);imported++;}
         }
       });
+      // Re-import Drive Links if present
+      var dlSheet=wb.Sheets['DriveLinks'];
+      var dlImported=0;
+      if(dlSheet){
+        var dlRows=XLSX.utils.sheet_to_json(dlSheet,{header:1});
+        if(!DATA.driveLinks)DATA.driveLinks={};
+        for(var di=1;di<dlRows.length;di++){
+          var dlRow=dlRows[di];if(!dlRow||!dlRow[0]||!dlRow[1])continue;
+          var dlId=String(dlRow[0]).trim();
+          var dlUrl=String(dlRow[1]).trim();
+          var dlLabel=dlRow[2]?String(dlRow[2]).trim():'';
+          var dlSaved=dlRow[3]?String(dlRow[3]).trim():'';
+          if(dlId&&dlUrl&&!DATA.driveLinks[dlId]){
+            DATA.driveLinks[dlId]={url:dlUrl,label:dlLabel,savedAt:dlSaved||new Date().toISOString()};
+            dlImported++;
+          }
+        }
+      }
+
       save();renderSidebar();renderTab();
-      alert(imported+' records imported.');
-    }catch(err){alert('Import failed: '+err.message);}
+      var msg=imported+' records imported.';
+      if(dlImported)msg+='\n'+dlImported+' Drive link(s) restored.';
+      if(imported===0&&dlImported===0)msg='No new records found.\n\nMake sure you are importing a FamilyVault Excel export.';
+      alert(msg);
+    }catch(err){alert('Import failed: '+err.message+'\n\nMake sure this is a FamilyVault .xlsx export file.');}
   };
   reader.readAsArrayBuffer(file);evt.target.value='';
 }
@@ -3130,6 +3205,56 @@ function openShareModal(){
     +'</div></div>'
     +'<div style="background:var(--amber-l);border:1px solid rgba(196,122,26,0.3);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--amber);margin-top:12px">⚠ Keep private — only share with trusted family members. Never send via email.</div>';
   openModal('share-modal');
+}
+
+// ══ DRIVE LINKS BACKUP / RESTORE ══
+function exportDriveLinksJSON(){
+  var links=DATA.driveLinks||{};
+  var count=Object.keys(links).length;
+  if(count===0){alert('No Drive links to export.');return;}
+  // Enrich with record names for readability
+  var allTabs=['docs','bank','insurance','passwords','medical','property','vehicles','notes'];
+  (DATA.customCategories||[]).forEach(function(cat){allTabs.push('cat_'+cat.id);});
+  var out={exported:new Date().toISOString(),count:count,links:{}};
+  Object.keys(links).forEach(function(id){
+    var dl=links[id];
+    var name='';
+    allTabs.forEach(function(tab){var r=(DATA[tab]||[]).find(function(x){return x.id===id;});if(r&&r.name)name=r.name;});
+    out.links[id]=Object.assign({},dl,{recordName:name});
+  });
+  var blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='FamilyVault_DriveLinks_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+
+function importDriveLinksJSON(evt){
+  var file=evt.target.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      var links=data.links||data; // support both wrapped and raw formats
+      if(typeof links!=='object'){throw new Error('Invalid format');}
+      if(!DATA.driveLinks)DATA.driveLinks={};
+      var restored=0,skipped=0;
+      Object.keys(links).forEach(function(id){
+        var dl=links[id];
+        if(!dl||!dl.url)return;
+        if(DATA.driveLinks[id]){skipped++;return;}
+        DATA.driveLinks[id]={url:dl.url,label:dl.label||'',savedAt:dl.savedAt||new Date().toISOString()};
+        restored++;
+      });
+      save();
+      renderSettings();
+      alert('✅ '+restored+' Drive link(s) restored!'+(skipped?' ('+skipped+' already existed, skipped)':''));
+    }catch(err){
+      alert('Restore failed: '+err.message);
+    }
+  };
+  reader.readAsText(file);
+  evt.target.value='';
 }
 
 // ══ GITHUB GIST SYNC ══

@@ -394,6 +394,25 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .gdrive-preview{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:10px;}
 .gdrive-preview iframe{width:100%;height:300px;border:none;display:block;}
 
+/* JSONBIN/GITHUB SYNC */
+.sync-bar{display:flex;align-items:center;gap:10px;padding:7px 20px;background:var(--surface);border-bottom:1px solid var(--border);font-size:12px;flex-wrap:wrap;position:sticky;top:53px;z-index:190;}
+.sync-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--border2);}
+.sync-dot.ok{background:var(--green);}
+.sync-dot.busy{background:var(--amber);animation:sdot 0.9s infinite;}
+.sync-dot.err{background:var(--red);}
+@keyframes sdot{0%,100%{opacity:1}50%{opacity:0.25}}
+.sync-label{color:var(--text3);font-family:var(--mono);}
+.sync-action{padding:3px 11px;font-size:11px;font-weight:600;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:var(--sans);}
+.sync-action:hover{background:var(--surface2);}
+/* UPDATE BANNER */
+.update-banner{display:none;align-items:center;gap:10px;background:linear-gradient(135deg,#1a7a4a,#155f3a);color:#fff;padding:10px 16px;flex-wrap:wrap;}
+.update-banner-text{flex:1;font-size:13px;font-weight:500;}
+.update-btn{padding:7px 16px;font-size:12px;font-weight:700;background:#fff;color:#1a7a4a;border:none;border-radius:20px;cursor:pointer;}
+/* FAMILY SHARING */
+.share-step{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:var(--r);margin-bottom:8px;border:1px solid var(--border);}
+.share-step-num{width:24px;height:24px;border-radius:50%;background:var(--gold);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.share-step-text{font-size:13px;color:var(--text2);line-height:1.6;}
+
 /* INSTALL BANNER */
 .install-banner{
   display:none;align-items:center;gap:10px;
@@ -419,7 +438,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   .sidebar{display:none;}
   .main{padding:12px 14px 80px;}
   .top-bar{padding:10px 14px;}
-  .top-actions .tbtn:not(.gold):not(.red){display:none;}
+  .top-actions .tbtn:not(.gold):not(.red):not(.import-btn){display:none;}
   .top-actions{gap:6px;}
   .tbtn{padding:7px 12px;font-size:12px;}
   .mobile-nav{display:grid;}
@@ -461,7 +480,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
     <!-- Step 1: Password -->
     <div id="lock-step-pw">
-      <input type="password" class="lock-input" id="lock-pw" placeholder="Password" onkeydown="if(event.key==='Enter')lockAction()"/>
+      <div style="position:relative;margin-bottom:12px">
+        <input type="password" class="lock-input" id="lock-pw" placeholder="Password" style="margin-bottom:0;padding-right:48px" onkeydown="if(event.key==='Enter')lockAction()"/>
+        <button onclick="toggleLockPw()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--text3);padding:4px" id="lock-pw-eye" title="Show/hide">👁</button>
+      </div>
       <input type="password" class="lock-input" id="lock-pw2" placeholder="Confirm password" style="display:none" onkeydown="if(event.key==='Enter')lockAction()"/>
       <button class="lock-btn" id="lock-action-btn" onclick="lockAction()">Unlock Vault</button>
       <div class="lock-err" id="lock-err"></div>
@@ -499,12 +521,32 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
 <div class="modal-overlay" id="add-cat-modal">
   <div class="modal" style="max-width:400px">
-    <h2>Add Category</h2>
-    <div class="fg"><label>Category Name</label><input type="text" id="new-cat-name" placeholder="e.g. Subscriptions, Safe Deposit..."/></div>
-    <div class="fg"><label>Icon (emoji)</label><input type="text" id="new-cat-icon" placeholder="📁" maxlength="4"/></div>
+    <h2>➕ Add New Section</h2>
+    <div class="two-col" style="margin-bottom:4px">
+      <div class="fg"><label>Section Name</label><input type="text" id="new-cat-name" placeholder="e.g. Subscriptions, Emergency Contacts…"/></div>
+      <div class="fg"><label>Icon (emoji)</label><input type="text" id="new-cat-icon" placeholder="📁" maxlength="4"/></div>
+    </div>
+    <div class="fg">
+      <label>Start from a template (optional)</label>
+      <div id="cat-template-chips" style="display:flex;flex-wrap:wrap;gap:7px;margin-top:4px"></div>
+    </div>
+    <div class="fg">
+      <label>Fields <span style="font-weight:400;color:var(--text3)">(add more later via ⚙ Columns)</span></label>
+      <div id="new-cat-fields" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="new-field-name" placeholder="Field name…" style="flex:1;min-width:120px;padding:7px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:var(--mono);outline:none"/>
+        <select id="new-field-type" style="padding:7px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:var(--sans);outline:none;cursor:pointer">
+          <option value="text">Text</option>
+          <option value="date">Date</option>
+          <option value="secret">Secret 🔒</option>
+          <option value="member">Person</option>
+        </select>
+        <button class="tbtn gold" onclick="addNewCatField()">+ Add Field</button>
+      </div>
+    </div>
     <div class="modal-foot">
       <button class="btn btn-cancel" onclick="closeModal('add-cat-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveNewCategory()">Add Category</button>
+      <button class="btn btn-primary" onclick="saveNewCategory()">✓ Create Section</button>
     </div>
   </div>
 </div>
@@ -683,6 +725,16 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   </div>
 </div>
 
+<!-- FAMILY SHARING MODAL -->
+<div class="modal-overlay" id="share-modal">
+  <div class="modal" style="max-width:500px">
+    <h2>👨‍👩‍👧 Family Sharing — 2FA Setup</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">Share access so a family member can log in with their own authenticator app — from anywhere in the world.</p>
+    <div id="share-modal-body"></div>
+    <div class="modal-foot"><button class="btn btn-cancel" onclick="closeModal('share-modal')">Close</button></div>
+  </div>
+</div>
+
 <!-- APP -->
 <div id="app">
   <div class="top-bar">
@@ -690,11 +742,27 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="top-actions">
       <input type="file" id="import-file" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)"/>
       <input type="file" id="lp-csv-file" accept=".csv" style="display:none" onchange="importLastPassCSV(event)"/>
-      <button class="tbtn" onclick="document.getElementById('import-file').click()">⬆ Import</button>
+      <button class="tbtn import-btn" onclick="document.getElementById('import-file').click()">⬆ Import</button>
       <button class="tbtn" onclick="openScanModal()" style="border-color:var(--blue);color:var(--blue)">📷 Scan Doc</button>
       <button class="tbtn gold" onclick="exportExcel()">⬇ Export Excel</button>
       <button class="tbtn red" onclick="lockVault()">🔒 Lock</button>
     </div>
+  </div>
+
+  <!-- SYNC BAR -->
+  <div class="sync-bar" id="sync-bar" style="display:none">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span class="sync-label" id="sync-label">GitHub Sync</span>
+    <button class="sync-action" id="sync-now-btn" onclick="gsSyncNow()" style="display:none">↻ Sync</button>
+    <button class="sync-action" id="sync-disconnect-btn" onclick="gsDisconnect()" style="display:none;color:var(--red)">Disconnect</button>
+    <span style="margin-left:auto;font-size:11px;color:var(--text3);font-family:var(--mono)" id="sync-time"></span>
+  </div>
+
+  <!-- UPDATE BANNER -->
+  <div class="update-banner" id="update-banner">
+    <div class="update-banner-text">🔄 <strong>New version available!</strong> Tap to get the latest update.</div>
+    <button class="update-btn" onclick="applyUpdate()">Update Now</button>
+    <button style="background:none;border:none;color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;padding:4px" onclick="document.getElementById('update-banner').style.display='none'">✕</button>
   </div>
 
   <!-- INSTALL BANNER -->
@@ -1582,23 +1650,125 @@ function confirmDelCol(){
   closeModal('del-col-modal');renderTab();
 }
 
-// ══ CUSTOM CATEGORIES ══
+// ══ CUSTOM CATEGORIES — SECTION BUILDER ══
+var _newCatFields=[];
+
+var CAT_TEMPLATES=[
+  {name:'Subscriptions',icon:'💳',fields:[
+    {l:'Amount/Month',k:'amount',type:'text'},{l:'Billing Date',k:'billingDate',type:'date'},
+    {l:'Website',k:'website',type:'text'},{l:'Username',k:'username',type:'text'},
+    {l:'Password',k:'password',type:'text',secret:true},{l:'Notes',k:'notes',type:'text'}
+  ]},
+  {name:'Emergency Contacts',icon:'🚨',fields:[
+    {l:'Relationship',k:'relationship',type:'text'},{l:'Phone',k:'phone',type:'text'},
+    {l:'Email',k:'email',type:'text'},{l:'Address',k:'address',type:'text'},{l:'Notes',k:'notes',type:'text'}
+  ]},
+  {name:'Safe Deposit / Locker',icon:'🗄️',fields:[
+    {l:'Location',k:'location',type:'text'},{l:'Box Number',k:'boxNumber',type:'text'},
+    {l:'Bank/Institution',k:'bank',type:'text'},{l:'Key Location',k:'keyLocation',type:'text'},
+    {l:'Contents',k:'contents',type:'text'},{l:'Notes',k:'notes',type:'text'}
+  ]},
+  {name:'Tax Records',icon:'📋',fields:[
+    {l:'Tax Year',k:'taxYear',type:'text'},{l:'Type',k:'taxType',type:'text'},
+    {l:'Filed Date',k:'filedDate',type:'date'},{l:'Refund Amount',k:'refund',type:'text'},
+    {l:'Tax Due',k:'taxDue',type:'text'},{l:'Notes',k:'notes',type:'text'}
+  ]},
+  {name:'Utilities',icon:'⚡',fields:[
+    {l:'Provider',k:'provider',type:'text'},{l:'Account Number',k:'accountNumber',type:'text',secret:true},
+    {l:'Monthly Amount',k:'amount',type:'text'},{l:'Due Date',k:'dueDate',type:'date'},
+    {l:'Website',k:'website',type:'text'},{l:'Phone',k:'phone',type:'text'},{l:'Notes',k:'notes',type:'text'}
+  ]},
+  {name:'Investments',icon:'📈',fields:[
+    {l:'Type',k:'investType',type:'text'},{l:'Account Number',k:'accountNumber',type:'text',secret:true},
+    {l:'Institution',k:'institution',type:'text'},{l:'Current Value',k:'currentValue',type:'text'},
+    {l:'Purchase Date',k:'purchaseDate',type:'date'},{l:'Notes',k:'notes',type:'text'}
+  ]},
+  {name:'Education',icon:'🎓',fields:[
+    {l:'Institution',k:'institution',type:'text'},{l:'Degree/Course',k:'degree',type:'text'},
+    {l:'Start Date',k:'startDate',type:'date'},{l:'End Date',k:'endDate',type:'date'},
+    {l:'Certificate #',k:'certNumber',type:'text'},{l:'Notes',k:'notes',type:'text'}
+  ]},
+  {name:'Custom (blank)',icon:'📁',fields:[{l:'Notes',k:'notes',type:'text'}]},
+];
+
 function openAddCatModal(){
+  _newCatFields=[];
   document.getElementById('new-cat-name').value='';
   document.getElementById('new-cat-icon').value='📁';
+  if(document.getElementById('new-field-name'))document.getElementById('new-field-name').value='';
+  var chips=CAT_TEMPLATES.map(function(t){
+    return '<button class="scan-type-chip" onclick="applyTemplate(\''+t.name+'\')" data-tname="'+esc(t.name)+'">'+t.icon+' '+t.name+'</button>';
+  }).join('');
+  document.getElementById('cat-template-chips').innerHTML=chips;
+  applyTemplate('Custom (blank)');
   openModal('add-cat-modal');
 }
+
+function applyTemplate(name){
+  var t=CAT_TEMPLATES.find(function(x){return x.name===name;});
+  if(!t)return;
+  document.querySelectorAll('#cat-template-chips .scan-type-chip').forEach(function(el){
+    el.classList.toggle('active',el.dataset.tname===name);
+  });
+  var nameEl=document.getElementById('new-cat-name');
+  var iconEl=document.getElementById('new-cat-icon');
+  if(!nameEl.value||nameEl.value===nameEl.dataset.prev)nameEl.value=(name==='Custom (blank)'?'':name);
+  nameEl.dataset.prev=nameEl.value;
+  if(!iconEl.value||iconEl.value==='📁')iconEl.value=t.icon;
+  _newCatFields=t.fields.map(function(f){return {l:f.l,k:f.k,type:f.type,secret:!!f.secret};});
+  renderNewCatFields();
+}
+
+function renderNewCatFields(){
+  var container=document.getElementById('new-cat-fields');if(!container)return;
+  if(!_newCatFields.length){
+    container.innerHTML='<div style="font-size:12px;color:var(--text3);padding:6px 0">No extra fields — Name is always included. Add more below.</div>';
+    return;
+  }
+  container.innerHTML=_newCatFields.map(function(f,i){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--border)">'
+      +'<span style="font-size:12px;flex:1;font-family:var(--mono);color:var(--text)">'+esc(f.l)+'</span>'
+      +'<span style="font-size:11px;background:var(--surface3);color:var(--text3);padding:2px 7px;border-radius:10px">'
+        +(f.type==='date'?'📅 Date':f.type==='member'?'👤 Person':f.secret?'🔒 Secret':'Aa Text')+'</span>'
+      +'<button onclick="removeNewCatField('+i+')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:2px">✕</button>'
+      +'</div>';
+  }).join('');
+}
+
+function addNewCatField(){
+  var nameEl=document.getElementById('new-field-name');
+  var typeEl=document.getElementById('new-field-type');
+  var name=(nameEl.value||'').trim();
+  if(!name){nameEl.style.borderColor='var(--red)';nameEl.focus();return;}
+  nameEl.style.borderColor='';
+  var type=typeEl.value;
+  var key='f_'+name.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'')+'_'+uid().slice(0,4);
+  _newCatFields.push({l:name,k:key,type:type==='secret'?'text':type,secret:type==='secret'});
+  nameEl.value='';
+  renderNewCatFields();
+}
+
+function removeNewCatField(i){_newCatFields.splice(i,1);renderNewCatFields();}
+
 function saveNewCategory(){
   var name=(document.getElementById('new-cat-name').value||'').trim();
   var icon=(document.getElementById('new-cat-icon').value||'📁').trim()||'📁';
-  if(!name){document.getElementById('new-cat-name').style.borderColor='var(--red)';return;}
+  if(!name){document.getElementById('new-cat-name').style.borderColor='var(--red)';document.getElementById('new-cat-name').focus();return;}
   var id=uid();
   var cat={id:id,name:name,icon:icon};
   DATA.customCategories.push(cat);
   DATA['cat_'+id]=[];
-  TAB_META['cat_'+id]={label:name,icon:icon,nameLabel:name+' Name'};
+  var tabKey='cat_'+id;
+  TAB_META[tabKey]={label:name,icon:icon,nameLabel:name+' Name'};
+  if(_newCatFields.length){
+    SCHEMAS[tabKey]=[{k:'member',l:'Person',type:'member'}].concat(_newCatFields.filter(function(f){return f.k!=='member';}));
+    if(!DATA.customCols)DATA.customCols={};
+    DATA.customCols[tabKey]=_newCatFields.filter(function(f){return f.k!=='member';}).map(function(f){
+      return {k:f.k,l:f.l,type:f.type,secret:!!f.secret,custom:true};
+    });
+  }
   save();closeModal('add-cat-modal');
-  ACTIVE_TAB='cat_'+id;
+  ACTIVE_TAB=tabKey;
   renderSidebar();renderTab();
 }
 
@@ -1618,13 +1788,15 @@ function renderSettings(){
   h+='<p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">Use <strong>Google Authenticator</strong>, <strong>Authy</strong>, or any authenticator app on your phone. No emails, no SMS — codes are generated locally on your device. Nothing is sent anywhere.</p>';
 
   if(twofa.totpEnabled && twofa.totpSecret){
-    // TOTP already configured
     h+='<div style="background:var(--green-l);border:1px solid rgba(26,122,74,0.25);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px">'
       +'<span style="font-size:20px">✅</span>'
       +'<div><div style="font-weight:600;color:var(--green);font-size:13px">Authenticator App Connected</div>'
       +'<div style="font-size:11px;color:var(--text3);margin-top:2px">2FA is active. You\'ll need your authenticator app each time you log in.</div></div>'
       +'</div>'
-      +'<button class="tbtn red" onclick="disable2FA()">Disable 2FA</button>';
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+      +'<button class="tbtn" onclick="openShareModal()" style="border-color:var(--blue);color:var(--blue)">👨‍👩‍👧 Share with Family</button>'
+      +'<button class="tbtn red" onclick="disable2FA()">Disable 2FA</button>'
+      +'</div>';
   } else {
     // Setup flow
     h+='<div style="font-size:13px;font-weight:600;margin-bottom:10px">Setup Steps:</div>'
@@ -1645,7 +1817,46 @@ function renderSettings(){
     +'<div class="fg"><label>New Password</label><input type="password" id="chpw1" placeholder="New password"/></div>'
     +'<div class="fg"><label>Confirm</label><input type="password" id="chpw2" placeholder="Confirm"/></div>'
     +'</div><button class="tbtn gold" onclick="changePw()">Update Password</button></div>';
-  h+='<div class="settings-card" style="background:var(--red-l);border-color:rgba(176,42,26,0.2)">'
+
+  // Storage Usage
+  var attCount=Object.keys(DATA.attachments||{}).length;
+  var attSize=0;Object.values(DATA.attachments||{}).forEach(function(a){if(a&&a.data)attSize+=a.data.length;});
+  var storageUsed='?';try{var raw=localStorage.getItem(VAULT_KEY)||'';storageUsed=Math.round(raw.length/1024)+'KB';}catch(e){}
+  h+='<div class="settings-card" style="border-color:rgba(196,122,26,0.3)">'
+    +'<h3>💾 Storage Usage</h3>'
+    +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7">'
+    +'Total vault size: <strong>'+storageUsed+'</strong> of ~5MB browser limit.<br/>'
+    +'Scanned documents stored: <strong>'+attCount+' files ('+Math.round(attSize/1024)+'KB)</strong><br/>'
+    +'<span style="color:var(--text3)">Tip: Use 🔗 Google Drive links instead of scanning — zero storage!</span></p>'
+    +(attCount>0?'<button class="tbtn red" onclick="clearScannedAttachments()">🗑️ Clear All Scanned Docs ('+attCount+')</button>':'<span style="font-size:12px;color:var(--green)">✓ No scanned documents stored</span>')
+    +'</div>';
+
+  // GitHub Gist Cloud Sync
+  var gsCfg=gsGetConfig();
+  var gsConnected=!!(gsCfg.token&&gsCfg.gistId);
+  h+='<div class="settings-card" style="border-color:rgba(26,122,74,0.3)">'
+    +'<h3>☁ Cloud Sync (GitHub)</h3>'
+    +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7">Sync across all devices using your free GitHub account. Data saved as a private Gist — still password-protected.</p>'
+    +(gsConnected
+      ?'<div style="background:var(--green-l);border:1px solid rgba(26,122,74,0.2);border-radius:var(--r);padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--green)">✅ Connected — syncing automatically</div>'
+        +'<div style="font-size:12px;color:var(--text2);margin-bottom:10px">📱 Connect phone or another device without typing — scan a QR code!</div>'
+        +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'
+        +'<button class="tbtn gold" onclick="showSyncQR()">📱 Connect Another Device (QR)</button>'
+        +'<button class="tbtn" onclick="gsSyncNow()" style="border-color:var(--green);color:var(--green)">↻ Sync Now</button>'
+        +'<button class="tbtn red" onclick="gsDisconnect()">Disconnect</button>'
+        +'</div><div id="sync-qr-area"></div>'
+      :'<details style="font-size:12px;color:var(--text2);margin-bottom:12px"><summary style="cursor:pointer;font-weight:600;color:var(--text);margin-bottom:6px">Setup steps (2 min, free)</summary>'
+        +'<ol style="padding-left:18px;line-height:2.2;margin-top:6px">'
+        +'<li>Go to <a href="https://github.com/settings/tokens/new" target="_blank" style="color:var(--gold)">github.com/settings/tokens/new</a></li>'
+        +'<li>Name: "FamilyVault" | Expiration: <strong>No expiration</strong> | Tick only <strong>gist</strong></li>'
+        +'<li>Generate token → copy it</li>'
+        +'<li>Paste below → Connect</li>'
+        +'</ol></details>'
+        +'<div class="fg"><label>GitHub Token (gist scope)</label><input type="password" id="gs-token-inp" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"/></div>'
+        +'<div class="fg"><label>Gist ID <span style="font-weight:400;color:var(--text3)">(leave blank to create new, or paste existing to join)</span></label><input type="text" id="gs-gistid-inp" placeholder="Optional — paste existing Gist ID"/></div>'
+        +'<button class="tbtn gold" onclick="gsConnect()">☁ Connect & Sync</button>'
+        +'<div id="sync-qr-area" style="margin-top:10px"></div>')
+    +'</div>';
     +'<h3 style="color:var(--red)">⚠ Danger Zone</h3>'
     +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px">Clear all vault data. Export first.</p>'
     +'<button class="tbtn red" onclick="clearAll()">Clear All Data</button></div>';
@@ -2974,6 +3185,247 @@ function viewAttachment(id){
 // ══ INITIALIZE MISSING DATA FIELDS ══
 if(!DATA.driveLinks)DATA.driveLinks={};
 if(!DATA.attachments)DATA.attachments={};
+
+// ══ PASSWORD SHOW/HIDE ══
+function toggleLockPw(){
+  var inp=document.getElementById('lock-pw');
+  var eye=document.getElementById('lock-pw-eye');
+  if(inp.type==='password'){inp.type='text';if(eye)eye.textContent='🙈';}
+  else{inp.type='password';if(eye)eye.textContent='👁';}
+}
+
+// ══ APPLY UPDATE ══
+function applyUpdate(){
+  var banner=document.getElementById('update-banner');
+  if(banner)banner.innerHTML='<div class="update-banner-text">⏳ Updating...</div>';
+  if(window._newSW){window._newSW.postMessage({type:'SKIP_WAITING'});}
+  else{window.location.reload(true);}
+}
+
+// ══ CLEAR SCANNED ATTACHMENTS ══
+function clearScannedAttachments(){
+  var count=Object.keys(DATA.attachments||{}).length;
+  if(!count){alert('No scanned documents to clear.');return;}
+  if(!confirm('Remove all '+count+' scanned document(s)?\n\nYour records stay safe — only stored images/PDFs are removed.\nTip: Use 🔗 Drive links instead to keep documents without using storage.'))return;
+  DATA.attachments={};
+  save();
+  alert('✅ Scanned documents cleared!');
+  renderSettings();
+}
+
+// ══ FAMILY SHARING ══
+function openShareModal(){
+  var s=getTwofaSettings();
+  if(!s.totpEnabled||!s.totpSecret){alert('Please set up 2FA first.');return;}
+  var secret=s.totpSecret;
+  var uri='otpauth://totp/FamilyVault:Family?secret='+secret+'&issuer=FamilyVault&algorithm=SHA1&digits=6&period=30';
+  var qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(uri);
+  var body=document.getElementById('share-modal-body');
+  body.innerHTML=
+    '<div style="text-align:center;margin-bottom:16px">'
+    +'<img src="'+qrUrl+'" width="180" height="180" style="border:6px solid #fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.12)"/>'
+    +'<div style="font-size:11px;color:var(--text3);margin-top:8px">Family member scans this with their authenticator app</div>'
+    +'</div>'
+    +'<div class="share-step"><div class="share-step-num">1</div><div class="share-step-text">Install <strong>Google Authenticator</strong> or <strong>Authy</strong> (free on App Store / Play Store)</div></div>'
+    +'<div class="share-step"><div class="share-step-num">2</div><div class="share-step-text">Open the app → tap <strong>+</strong> → <strong>Scan QR code</strong> → point at the code above</div></div>'
+    +'<div class="share-step"><div class="share-step-num">3</div><div class="share-step-text">Share the <strong>vault password</strong> separately (in person or via Signal)</div></div>'
+    +'<div class="share-step"><div class="share-step-num">4</div><div class="share-step-text">They open the vault URL → enter password → enter 6-digit code ✅</div></div>'
+    +'<div style="margin-top:14px"><div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-family:var(--mono);margin-bottom:6px">Can\'t scan? Share this key manually:</div>'
+    +'<div style="display:flex;gap:8px;align-items:center">'
+    +'<div style="flex:1;font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:0.2em;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px;text-align:center;color:var(--text)">'+secret+'</div>'
+    +'<button class="tbtn" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+secret+'\').then(function(){alert(\'Key copied!\')})">Copy</button>'
+    +'</div></div>'
+    +'<div style="background:var(--amber-l);border:1px solid rgba(196,122,26,0.3);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--amber);margin-top:12px">⚠ Keep private — only share with trusted family members. Never send via email.</div>';
+  openModal('share-modal');
+}
+
+// ══ GITHUB GIST SYNC ══
+var GS_CFG_KEY='fvg_gs_cfg_v1';
+var _gsSaving=false;var _gsDirty=false;
+
+function gsGetConfig(){try{return JSON.parse(localStorage.getItem(GS_CFG_KEY)||'{}')}catch(e){return {};}}
+function gsSaveConfig(o){localStorage.setItem(GS_CFG_KEY,JSON.stringify(o));}
+
+function gsSetUI(state,msg){
+  var bar=document.getElementById('sync-bar');
+  var dot=document.getElementById('sync-dot');
+  var label=document.getElementById('sync-label');
+  var nowBtn=document.getElementById('sync-now-btn');
+  var discBtn=document.getElementById('sync-disconnect-btn');
+  var timeEl=document.getElementById('sync-time');
+  if(!bar)return;
+  bar.style.display='flex';
+  dot.className='sync-dot'+(state==='ok'?' ok':state==='busy'?' busy':state==='err'?' err':'');
+  if(label)label.textContent='GitHub Sync: '+msg;
+  if(nowBtn)nowBtn.style.display=(state==='ok'||state==='err')?'':'none';
+  if(discBtn)discBtn.style.display=(state==='ok'||state==='err')?'':'none';
+  if(timeEl&&state==='ok'){var t=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});timeEl.textContent='Last sync: '+t;}
+}
+
+async function gsConnect(){
+  var token=(document.getElementById('gs-token-inp').value||'').trim();
+  var existingId=document.getElementById('gs-gistid-inp')?document.getElementById('gs-gistid-inp').value.trim():'';
+  if(!token){alert('Please paste your GitHub token.');return;}
+  gsSetUI('busy','Connecting…');
+  try{
+    var check=await fetch('https://api.github.com/user',{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}});
+    if(!check.ok)throw new Error('Invalid token — HTTP '+check.status);
+    var user=await check.json();
+    if(existingId){
+      var vresp=await fetch('https://api.github.com/gists/'+existingId,{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}});
+      if(!vresp.ok)throw new Error('Gist not found — check the Gist ID');
+      gsSaveConfig({token:token,gistId:existingId,user:user.login});
+      await gsPull();
+      alert('✅ Joined existing sync as @'+user.login+'!\n\nAll your vault data has been loaded.');
+      renderSettings();
+    } else {
+      var resp=await fetch('https://api.github.com/gists',{
+        method:'POST',
+        headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
+        body:JSON.stringify({description:'FamilyVault Data',public:false,files:{'familyvault.json':{content:JSON.stringify(DATA)}}})
+      });
+      if(!resp.ok)throw new Error('Gist create failed — HTTP '+resp.status);
+      var gist=await resp.json();
+      gsSaveConfig({token:token,gistId:gist.id,user:user.login});
+      gsSetUI('ok','✓ synced');
+      alert('✅ Connected as @'+user.login+'!\n\nTo connect other devices:\n1. Settings → Cloud Sync → Connect Another Device (QR)\n2. Or enter token + Gist ID: '+gist.id);
+      renderSettings();
+    }
+  }catch(e){gsSetUI('err','Connection failed');alert('Connection failed: '+e.message);}
+}
+
+async function gsPush(){
+  var cfg=gsGetConfig();if(!cfg.token||!cfg.gistId)return;
+  if(_gsSaving){_gsDirty=true;return;}
+  _gsSaving=true;gsSetUI('busy','Saving…');
+  try{
+    var payload=JSON.parse(JSON.stringify(DATA));
+    delete payload.attachments;payload.attachments={};
+    var resp=await fetch('https://api.github.com/gists/'+cfg.gistId,{
+      method:'PATCH',
+      headers:{'Authorization':'token '+cfg.token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
+      body:JSON.stringify({files:{'familyvault.json':{content:JSON.stringify(payload)}}})
+    });
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    gsSetUI('ok','✓ synced');
+  }catch(e){
+    console.error('gsPush',e);gsSetUI('err',e.message||'Save failed');
+    setTimeout(gsPush,15000);
+  }finally{_gsSaving=false;if(_gsDirty){_gsDirty=false;gsPush();}}
+}
+
+async function gsPull(){
+  var cfg=gsGetConfig();if(!cfg.token||!cfg.gistId)return;
+  gsSetUI('busy','Loading from cloud…');
+  try{
+    var resp=await fetch('https://api.github.com/gists/'+cfg.gistId,{
+      headers:{'Authorization':'token '+cfg.token,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(resp.status===401)throw new Error('Token expired — reconnect in Settings → Cloud Sync');
+    if(resp.status===404)throw new Error('Gist not found — check Gist ID');
+    if(!resp.ok)throw new Error('GitHub error: HTTP '+resp.status);
+    var gist=await resp.json();
+    var fileObj=gist.files&&gist.files['familyvault.json'];
+    if(!fileObj)throw new Error('No vault file found in gist');
+    var raw=fileObj.content;
+    if(fileObj.truncated&&fileObj.raw_url){
+      var rawResp=await fetch(fileObj.raw_url,{headers:{'Authorization':'token '+cfg.token}});
+      if(!rawResp.ok)throw new Error('Failed to fetch full content');
+      raw=await rawResp.text();
+    }
+    if(raw){
+      var cloud=JSON.parse(raw);
+      if(cloud&&cloud.docs!==undefined){
+        DATA=cloud;
+        if(!DATA.members||!DATA.members.length)DATA.members=['Shailesh Koppikar','Anu Kumble','Ria Koppikar','Sunder Koppikar','Nalini Koppikar'];
+        if(!DATA.customCategories)DATA.customCategories=[];
+        if(!DATA.hiddenCols)DATA.hiddenCols={};
+        if(!DATA.customCols)DATA.customCols={};
+        if(!DATA.customScanTypes)DATA.customScanTypes={};
+        if(!DATA.attachments)DATA.attachments={};
+        if(!DATA.driveLinks)DATA.driveLinks={};
+        ['docs','bank','insurance','passwords','medical','property','vehicles','notes'].forEach(function(t){if(!DATA[t])DATA[t]=[];});
+        (DATA.customCategories||[]).forEach(function(cat){
+          var tk='cat_'+cat.id;
+          if(!TAB_META[tk])TAB_META[tk]={label:cat.name,icon:cat.icon,nameLabel:cat.name+' Name'};
+          if(!DATA[tk])DATA[tk]=[];
+          if(!SCHEMAS[tk])SCHEMAS[tk]=[{k:'member',l:'Person',type:'member'},{k:'notes',l:'Notes',type:'text'}];
+        });
+        try{localStorage.setItem(VAULT_KEY,JSON.stringify(DATA));}catch(ex){}
+        renderSidebar();renderTab();
+      }
+    }
+    gsSetUI('ok','✓ synced');
+  }catch(e){
+    console.error('gsPull',e);
+    gsSetUI('err',e.message||'Load failed');
+    var label=document.getElementById('sync-label');
+    if(label)label.textContent='Sync error: '+e.message;
+  }
+}
+
+function gsSyncNow(){gsPull();}
+function gsDisconnect(){
+  if(!confirm('Disconnect cloud sync?\n\nLocal data stays safe.'))return;
+  gsSaveConfig({});
+  var bar=document.getElementById('sync-bar');if(bar)bar.style.display='none';
+  renderSettings();
+}
+
+function showSyncQR(){
+  var cfg=gsGetConfig();
+  if(!cfg.token||!cfg.gistId){alert('Not connected yet.');return;}
+  var area=document.getElementById('sync-qr-area');
+  if(!area)return;
+  if(area.innerHTML){area.innerHTML='';return;}
+  var payload=btoa(JSON.stringify({token:cfg.token,gistId:cfg.gistId}));
+  var connectUrl=window.location.origin+window.location.pathname+'?syncsetup='+payload;
+  var qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(connectUrl);
+  area.innerHTML=
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px;text-align:center;margin-top:8px">'
+    +'<div style="font-size:13px;font-weight:600;margin-bottom:10px">📱 Scan on phone or another device</div>'
+    +'<img src="'+esc(qrUrl)+'" width="180" height="180" style="border:6px solid #fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.12)"/>'
+    +'<div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.6">Open camera → scan → tap link → vault connects automatically</div>'
+    +'<div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'
+    +'<button class="tbtn" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+connectUrl+'\').then(function(){alert(\'Link copied!\')})">📋 Copy Link</button>'
+    +'<button class="tbtn" onclick="document.getElementById(\'sync-qr-area\').innerHTML=\'\'">Hide</button>'
+    +'</div>'
+    +'<div style="font-size:11px;color:var(--red);margin-top:8px;font-weight:600">⚠ Keep private — contains your sync credentials</div>'
+    +'</div>';
+}
+
+function checkSyncSetupURL(){
+  var params=new URLSearchParams(window.location.search);
+  var setup=params.get('syncsetup');
+  if(!setup)return;
+  try{
+    var cfg=JSON.parse(atob(setup));
+    if(!cfg.token||!cfg.gistId)return;
+    window.history.replaceState({},'',window.location.pathname);
+    if(confirm('📱 Connect cloud sync from QR code?\n\nThis will load your shared vault data.')){
+      gsSaveConfig({token:cfg.token,gistId:cfg.gistId,user:'shared'});
+      gsSetUI('busy','Loading vault from cloud…');
+      gsPull().then(function(){alert('✅ Connected! Your vault data has been loaded.');renderSettings();});
+    }
+  }catch(e){console.error('syncsetup error',e);}
+}
+
+// Patch save() to also push to GitHub
+var _origSave=save;
+save=function(){
+  _origSave();
+  var cfg=gsGetConfig();
+  if(cfg.token&&cfg.gistId)gsPush();
+};
+
+// Patch showApp to load from cloud and check QR URL
+var _origShowApp=showApp;
+showApp=function(){
+  _origShowApp();
+  checkSyncSetupURL();
+  var cfg=gsGetConfig();
+  if(cfg.token&&cfg.gistId){gsSetUI('busy','Loading from cloud…');gsPull();}
+};
 </script>
 
 <!-- MOBILE BOTTOM NAV -->
@@ -2981,17 +3433,17 @@ if(!DATA.attachments)DATA.attachments={};
   <button class="mnav-btn" onclick="mobileNavTab('docs')" id="mn-docs">
     <span class="mico">🪪</span><span>Docs</span>
   </button>
+  <button class="mnav-btn" onclick="mobileNavTab('passwords')" id="mn-passwords">
+    <span class="mico">🔑</span><span>Passwords</span>
+  </button>
   <button class="mnav-btn" onclick="mobileNavTab('bank')" id="mn-bank">
     <span class="mico">🏦</span><span>Bank</span>
-  </button>
-  <button class="mnav-btn" onclick="mobileNavTab('vehicles')" id="mn-vehicles">
-    <span class="mico">🚗</span><span>Cars</span>
   </button>
   <button class="mnav-btn" onclick="mobileNavTab('medical')" id="mn-medical">
     <span class="mico">🏥</span><span>Medical</span>
   </button>
-  <button class="mnav-btn" onclick="mobileNavTab('notes')" id="mn-more">
-    <span class="mico">☰</span><span>More</span>
+  <button class="mnav-btn" onclick="mobileNavTab('settings')" id="mn-settings">
+    <span class="mico">⚙️</span><span>Settings</span>
   </button>
 </nav>
 
@@ -3084,12 +3536,47 @@ if(!DATA.attachments)DATA.attachments={};
 
   // Service worker: only register when served from http/https (not file://)
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    // Write SW as a data URI workaround — inject as a real script element
-    var swScript = 'var CACHE="fv-v8"; self.addEventListener("install",function(e){self.skipWaiting();}); self.addEventListener("activate",function(e){e.waitUntil(clients.claim());}); self.addEventListener("fetch",function(e){e.respondWith(caches.open(CACHE).then(function(c){return c.match(e.request).then(function(r){return r||fetch(e.request).then(function(resp){c.put(e.request,resp.clone());return resp;});});}));});';
+    var swScript = `
+var CACHE="fv-v9";
+self.addEventListener("install",function(e){self.skipWaiting();});
+self.addEventListener("activate",function(e){
+  e.waitUntil(caches.keys().then(function(keys){
+    return Promise.all(keys.filter(function(k){return k!==CACHE;}).map(function(k){return caches.delete(k);}));
+  }).then(function(){return self.clients.claim();}));
+});
+self.addEventListener("fetch",function(e){
+  if(e.request.method!=="GET")return;
+  e.respondWith(fetch(e.request).then(function(resp){
+    var clone=resp.clone();
+    caches.open(CACHE).then(function(c){c.put(e.request,clone);});
+    return resp;
+  }).catch(function(){return caches.match(e.request);}));
+});
+self.addEventListener("message",function(e){if(e.data&&e.data.type==="SKIP_WAITING")self.skipWaiting();});
+`;
     try {
       var swBlob = new Blob([swScript], {type: 'application/javascript'});
       var swUrl = URL.createObjectURL(swBlob);
-      navigator.serviceWorker.register(swUrl).catch(function(){});
+      navigator.serviceWorker.register(swUrl).then(function(reg){
+        reg.update();
+        reg.addEventListener('updatefound', function(){
+          var newWorker = reg.installing;
+          if(!newWorker) return;
+          newWorker.addEventListener('statechange', function(){
+            if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
+              var banner = document.getElementById('update-banner');
+              if(banner) banner.style.display = 'flex';
+              window._newSW = newWorker;
+            }
+          });
+        });
+        setInterval(function(){ reg.update(); }, 5 * 60 * 1000);
+      }).catch(function(){});
+      navigator.serviceWorker.addEventListener('controllerchange', function(){
+        if(window._swReloading) return;
+        window._swReloading = true;
+        window.location.reload();
+      });
     } catch(e) {}
   }
 

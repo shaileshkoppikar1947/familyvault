@@ -662,22 +662,21 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   </div>
 </div>
 
-<!-- GOOGLE DRIVE LINKS MODAL (supports multiple links) -->
+
+<!-- GOOGLE DRIVE LINKS MODAL (multiple per record) -->
 <div class="modal-overlay" id="gdrive-modal">
   <div class="modal" style="max-width:520px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <h2 style="margin:0">🔗 Google Drive Documents</h2>
       <button onclick="closeModal('gdrive-modal')" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text3);padding:2px 6px">✕</button>
     </div>
-    <!-- Existing links list -->
-    <div id="gdrive-links-list" style="margin-bottom:14px"></div>
-    <!-- Add new link -->
+    <div id="gdrive-links-list" style="margin-bottom:12px"></div>
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px">
       <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);font-family:var(--mono);margin-bottom:10px">Add a link</div>
       <div class="fg" style="margin-bottom:8px">
         <label>Google Drive URL</label>
         <input type="url" id="gdrive-url-input" placeholder="Paste Google Drive link…" oninput="onGdriveInput()" style="width:100%"/>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px">Right-click file → Share → Copy link. Set sharing to "Anyone with the link" for preview.</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Right-click file in Drive → Share → Copy link</div>
       </div>
       <div class="fg" style="margin-bottom:10px">
         <label>Label</label>
@@ -686,7 +685,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div id="gdrive-preview-area"></div>
       <button class="btn btn-primary" onclick="saveGdriveLink()" style="width:100%">➕ Add Link</button>
     </div>
-    <div class="modal-foot" style="margin-top:12px">
+    <div class="modal-foot" style="margin-top:10px">
       <button class="btn btn-cancel" onclick="closeModal('gdrive-modal')">Done</button>
     </div>
   </div>
@@ -1272,8 +1271,8 @@ function renderRow(r,tab,cols,isEditing){
     if(hasAttachment){
       h+='<button class="icon-btn" title="View scanned document" onclick="viewAttachment(\''+id+'\')" style="color:var(--blue)">📎</button>';
     }
-    var hasDrive = DATA.driveLinks && DATA.driveLinks[id];
-    var driveCount = hasDrive ? gdriveGetLinks(id).length : 0;
+    var driveLinks=gdriveGetLinks(id);
+    var driveCount=driveLinks.length;
     h+='<button class="icon-btn" title="'+(driveCount?driveCount+' Drive link(s)':'Link Google Drive')+'" onclick="openGdriveModal(\''+tab+'\',\''+id+'\')" style="color:'+(driveCount?'#1a73e8':'var(--text3)')+';position:relative">'
       +'🔗'+(driveCount>1?'<span style="position:absolute;top:-4px;right:-4px;background:#1a73e8;color:#fff;border-radius:50%;width:14px;height:14px;font-size:9px;display:flex;align-items:center;justify-content:center;font-family:var(--mono)">'+driveCount+'</span>':'')
       +'</button>';
@@ -2810,122 +2809,7 @@ function formatBytes(b) {
   return (b/1048576).toFixed(1) + ' MB';
 }
 
-// ══ GOOGLE DRIVE LINKS (multiple per record) ══
-var _gdriveRowId=null;var _gdriveTab=null;
-
-// Migrate old single-link format {url,label} → array [{url,label,id}]
-function gdriveGetLinks(recordId){
-  if(!DATA.driveLinks)DATA.driveLinks={};
-  var val=DATA.driveLinks[recordId];
-  if(!val)return [];
-  // Old format: {url, label} — migrate to array
-  if(!Array.isArray(val)){
-    var arr=[{id:uid(),url:val.url,label:val.label||''}];
-    DATA.driveLinks[recordId]=arr;
-    return arr;
-  }
-  return val;
-}
-
-function openGdriveModal(tab,id){
-  _gdriveTab=tab;_gdriveRowId=id;
-  document.getElementById('gdrive-url-input').value='';
-  document.getElementById('gdrive-label-input').value='';
-  document.getElementById('gdrive-preview-area').innerHTML='';
-  renderGdriveLinksList(id);
-  openModal('gdrive-modal');
-}
-
-function renderGdriveLinksList(id){
-  var area=document.getElementById('gdrive-links-list');if(!area)return;
-  var links=gdriveGetLinks(id);
-  if(!links.length){
-    area.innerHTML='<div style="font-size:12px;color:var(--text3);padding:6px 0 10px">No links yet. Add your first one below.</div>';
-    return;
-  }
-  area.innerHTML=links.map(function(lnk){
-    var previewUrl=gdriveToPreviewUrl(lnk.url);
-    return '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px">'
-      +'<span style="font-size:18px">🔗</span>'
-      +'<div style="flex:1;min-width:0">'
-        +'<div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(lnk.label||'Drive Document')+'</div>'
-        +'<div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(lnk.url)+'</div>'
-      +'</div>'
-      +'<a href="'+esc(lnk.url)+'" target="_blank" class="tbtn" style="border-color:var(--blue);color:var(--blue);text-decoration:none;white-space:nowrap;flex-shrink:0">↗</a>'
-      +(previewUrl?'<button class="tbtn" onclick="toggleGdrivePreview(\''+lnk.id+'\')" style="white-space:nowrap;flex-shrink:0">👁</button>':'')
-      +'<button class="icon-btn del-btn" title="Remove" onclick="removeGdriveLinkById(\''+lnk.id+'\')">🗑️</button>'
-      +'</div>'
-      +'<div id="gpreview-'+lnk.id+'" style="display:none;margin-top:6px;border-radius:var(--r);overflow:hidden">'
-        +(previewUrl?'<iframe src="'+esc(previewUrl)+'" style="width:100%;height:260px;border:none" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups"></iframe>':'')
-      +'</div>';
-  }).join('');
-}
-
-function toggleGdrivePreview(linkId){
-  var el=document.getElementById('gpreview-'+linkId);
-  if(el)el.style.display=el.style.display==='none'?'block':'none';
-}
-
-function gdriveToPreviewUrl(url){
-  if(!url)return null;
-  var fileId=null;
-  var m=url.match(/\/d\/([a-zA-Z0-9_-]{10,})/);if(m)fileId=m[1];
-  if(!fileId){m=url.match(/id=([a-zA-Z0-9_-]{10,})/);if(m)fileId=m[1];}
-  if(fileId)return 'https://drive.google.com/file/d/'+fileId+'/preview';
-  var docM=url.match(/docs\.google\.com\/(document|spreadsheets|presentation)\/d\/([a-zA-Z0-9_-]{10,})/);
-  if(docM)return 'https://docs.google.com/'+docM[1]+'/d/'+docM[2]+'/preview';
-  return null;
-}
-
-function onGdriveInput(){
-  var url=document.getElementById('gdrive-url-input').value.trim();
-  updateGdrivePreview(url);
-}
-
-function updateGdrivePreview(url){
-  var area=document.getElementById('gdrive-preview-area');if(!area)return;
-  var previewUrl=gdriveToPreviewUrl(url);
-  if(previewUrl){
-    area.innerHTML='<div style="border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:10px"><iframe src="'+esc(previewUrl)+'" style="width:100%;height:200px;border:none;display:block" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups"></iframe></div>';
-  } else if(url){
-    area.innerHTML='<div style="padding:8px 10px;background:var(--surface2);border-radius:var(--r);font-size:12px;color:var(--text3);margin-bottom:10px">📄 Preview not available — link will open in Drive.</div>';
-  } else {area.innerHTML='';}
-}
-
-function saveGdriveLink(){
-  var url=(document.getElementById('gdrive-url-input').value||'').trim();
-  var label=(document.getElementById('gdrive-label-input').value||'').trim();
-  if(!url){alert('Please paste a Google Drive link.');return;}
-  if(!DATA.driveLinks)DATA.driveLinks={};
-  var links=gdriveGetLinks(_gdriveRowId);
-  links.push({id:uid(),url:url,label:label,savedAt:new Date().toISOString()});
-  DATA.driveLinks[_gdriveRowId]=links;
-  save();
-  // Clear inputs
-  document.getElementById('gdrive-url-input').value='';
-  document.getElementById('gdrive-label-input').value='';
-  document.getElementById('gdrive-preview-area').innerHTML='';
-  // Refresh list in modal
-  renderGdriveLinksList(_gdriveRowId);
-  // Refresh row icon
-  refreshRow(_gdriveTab,_gdriveRowId);
-}
-
-function removeGdriveLinkById(linkId){
-  if(!confirm('Remove this Drive link?'))return;
-  var links=gdriveGetLinks(_gdriveRowId);
-  DATA.driveLinks[_gdriveRowId]=links.filter(function(l){return l.id!==linkId;});
-  if(!DATA.driveLinks[_gdriveRowId].length)delete DATA.driveLinks[_gdriveRowId];
-  save();
-  renderGdriveLinksList(_gdriveRowId);
-  refreshRow(_gdriveTab,_gdriveRowId);
-}
-
-function refreshRow(tab,id){
-  var recs=DATA[tab]||[];var r=recs.find(function(x){return x.id===id;});
-  if(r){var cols=getVisibleCols(tab);var row=document.getElementById('row-'+id);
-    if(row){var tmp=document.createElement('table');tmp.innerHTML='<tbody>'+renderRow(r,tab,cols,false)+'</tbody>';var nr=tmp.querySelector('tr');if(nr)row.replaceWith(nr);}}
-}
+// ══ GOOGLE DRIVE LINKS — see second block below ══
 
 function viewAttachment(id) {
   var att = DATA.attachments && DATA.attachments[id];
@@ -3115,19 +2999,62 @@ function detailEdit(){
 function detailDrive(){closeModal('detail-modal');if(_detailTab&&_detailId)openGdriveModal(_detailTab,_detailId);}
 function detailDelete(){closeModal('detail-modal');if(_detailTab&&_detailId)askDelete(_detailTab,_detailId);}
 
-// ══ GOOGLE DRIVE LINKS ══
+// ══ GOOGLE DRIVE LINKS (multiple per record) ══
 var _gdriveRowId=null,_gdriveTab=null;
+
+function gdriveGetLinks(recordId){
+  if(!DATA.driveLinks)DATA.driveLinks={};
+  var val=DATA.driveLinks[recordId];
+  if(!val)return [];
+  if(!Array.isArray(val)){
+    // Migrate old single-link format to array
+    if(!val.url)return [];
+    var arr=[{id:uid(),url:val.url,label:val.label||'',savedAt:val.savedAt||''}];
+    DATA.driveLinks[recordId]=arr;
+    return arr;
+  }
+  return val;
+}
 
 function openGdriveModal(tab,id){
   _gdriveTab=tab;_gdriveRowId=id;
-  var existing=(DATA.driveLinks&&DATA.driveLinks[id])||{};
-  document.getElementById('gdrive-url-input').value=existing.url||'';
-  document.getElementById('gdrive-label-input').value=existing.label||'';
-  document.getElementById('gdrive-remove-btn').style.display=existing.url?'':'none';
-  var openBtn=document.getElementById('gdrive-open-btn');
-  if(openBtn){openBtn.href=existing.url||'#';openBtn.style.display=existing.url?'':'none';}
-  updateGdrivePreview(existing.url||'');
+  document.getElementById('gdrive-url-input').value='';
+  document.getElementById('gdrive-label-input').value='';
+  document.getElementById('gdrive-preview-area').innerHTML='';
+  renderGdriveLinksList(id);
   openModal('gdrive-modal');
+}
+
+function renderGdriveLinksList(id){
+  var area=document.getElementById('gdrive-links-list');if(!area)return;
+  var links=gdriveGetLinks(id);
+  if(!links.length){
+    area.innerHTML='<div style="font-size:12px;color:var(--text3);padding:4px 0 10px">No links yet. Add your first one below.</div>';
+    return;
+  }
+  area.innerHTML=links.map(function(lnk){
+    var previewUrl=gdriveToPreviewUrl(lnk.url);
+    return '<div style="margin-bottom:8px">'
+      +'<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r)">'
+      +'<span style="font-size:16px">🔗</span>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:13px;font-weight:600;color:var(--text)">'+esc(lnk.label||'Drive Document')+'</div>'
+        +'<div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(lnk.url)+'</div>'
+      +'</div>'
+      +'<a href="'+esc(lnk.url)+'" target="_blank" class="tbtn" style="border-color:var(--blue);color:var(--blue);text-decoration:none;flex-shrink:0">↗</a>'
+      +(previewUrl?'<button class="tbtn" onclick="toggleGdrivePreview(\''+lnk.id+'\')" style="flex-shrink:0">👁</button>':'')
+      +'<button class="icon-btn del-btn" title="Remove" onclick="removeGdriveLinkById(\''+lnk.id+'\')">🗑️</button>'
+      +'</div>'
+      +'<div id="gpreview-'+lnk.id+'" style="display:none;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r) var(--r);overflow:hidden">'
+        +(previewUrl?'<iframe src="'+esc(previewUrl)+'" style="width:100%;height:240px;border:none;display:block" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups"></iframe>':'')
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function toggleGdrivePreview(linkId){
+  var el=document.getElementById('gpreview-'+linkId);
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
 }
 
 function gdriveToPreviewUrl(url){
@@ -3142,19 +3069,16 @@ function gdriveToPreviewUrl(url){
 }
 
 function onGdriveInput(){
-  var url=document.getElementById('gdrive-url-input').value.trim();
-  updateGdrivePreview(url);
-  var openBtn=document.getElementById('gdrive-open-btn');
-  if(openBtn){openBtn.href=url||'#';openBtn.style.display=url?'':'none';}
+  updateGdrivePreview(document.getElementById('gdrive-url-input').value.trim());
 }
 
 function updateGdrivePreview(url){
   var area=document.getElementById('gdrive-preview-area');if(!area)return;
   var previewUrl=gdriveToPreviewUrl(url);
   if(previewUrl){
-    area.innerHTML='<div class="gdrive-preview"><iframe src="'+esc(previewUrl)+'" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups"></iframe></div>';
+    area.innerHTML='<div style="border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:10px"><iframe src="'+esc(previewUrl)+'" style="width:100%;height:180px;border:none;display:block" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups"></iframe></div>';
   } else if(url){
-    area.innerHTML='<div style="padding:10px;background:var(--surface2);border-radius:var(--r);font-size:12px;color:var(--text3);margin-top:8px">📄 Preview not available — will open in Drive when clicked.</div>';
+    area.innerHTML='<div style="padding:8px 10px;background:var(--surface2);border-radius:var(--r);font-size:12px;color:var(--text3);margin-bottom:10px">📄 Preview not available — will open in Drive.</div>';
   } else {area.innerHTML='';}
 }
 
@@ -3163,20 +3087,32 @@ function saveGdriveLink(){
   var label=(document.getElementById('gdrive-label-input').value||'').trim();
   if(!url){alert('Please paste a Google Drive link.');return;}
   if(!DATA.driveLinks)DATA.driveLinks={};
-  DATA.driveLinks[_gdriveRowId]={url:url,label:label,savedAt:new Date().toISOString()};
-  save();closeModal('gdrive-modal');
-  var tab=_gdriveTab,id=_gdriveRowId;
-  var recs=DATA[tab]||[];var r=recs.find(function(x){return x.id===id;});
-  if(r){var cols=getVisibleCols(tab);var row=document.getElementById('row-'+id);if(row){var tmp=document.createElement('table');tmp.innerHTML='<tbody>'+renderRow(r,tab,cols,false)+'</tbody>';var nr=tmp.querySelector('tr');if(nr)row.replaceWith(nr);}}
+  var links=gdriveGetLinks(_gdriveRowId);
+  links.push({id:uid(),url:url,label:label,savedAt:new Date().toISOString()});
+  DATA.driveLinks[_gdriveRowId]=links;
+  save();
+  document.getElementById('gdrive-url-input').value='';
+  document.getElementById('gdrive-label-input').value='';
+  document.getElementById('gdrive-preview-area').innerHTML='';
+  renderGdriveLinksList(_gdriveRowId);
+  refreshDriveRow(_gdriveTab,_gdriveRowId);
 }
 
-function removeGdriveLink(){
-  if(!confirm('Remove Google Drive link?'))return;
-  if(DATA.driveLinks&&DATA.driveLinks[_gdriveRowId])delete DATA.driveLinks[_gdriveRowId];
-  save();closeModal('gdrive-modal');
-  var tab=_gdriveTab,id=_gdriveRowId;
+function removeGdriveLinkById(linkId){
+  if(!confirm('Remove this Drive link?'))return;
+  var links=gdriveGetLinks(_gdriveRowId);
+  DATA.driveLinks[_gdriveRowId]=links.filter(function(l){return l.id!==linkId;});
+  if(!DATA.driveLinks[_gdriveRowId].length)delete DATA.driveLinks[_gdriveRowId];
+  save();
+  renderGdriveLinksList(_gdriveRowId);
+  refreshDriveRow(_gdriveTab,_gdriveRowId);
+}
+
+function refreshDriveRow(tab,id){
   var recs=DATA[tab]||[];var r=recs.find(function(x){return x.id===id;});
-  if(r){var cols=getVisibleCols(tab);var row=document.getElementById('row-'+id);if(row){var tmp=document.createElement('table');tmp.innerHTML='<tbody>'+renderRow(r,tab,cols,false)+'</tbody>';var nr=tmp.querySelector('tr');if(nr)row.replaceWith(nr);}}
+  if(!r)return;
+  var cols=getVisibleCols(tab);var row=document.getElementById('row-'+id);
+  if(row){var tmp=document.createElement('table');tmp.innerHTML='<tbody>'+renderRow(r,tab,cols,false)+'</tbody>';var nr=tmp.querySelector('tr');if(nr)row.replaceWith(nr);}
 }
 
 function viewAttachment(id){

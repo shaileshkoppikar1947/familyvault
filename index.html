@@ -3300,7 +3300,10 @@ async function gsPush(){
   _gsSaving=true;gsSetUI('busy','Saving…');
   try{
     var payload=JSON.parse(JSON.stringify(DATA));
+    // Strip large base64 attachments — they eat quota fast
     delete payload.attachments;payload.attachments={};
+    // Always include driveLinks — they're just URLs, very small
+    if(!payload.driveLinks)payload.driveLinks={};
     var resp=await fetch('https://api.github.com/gists/'+cfg.gistId,{
       method:'PATCH',
       headers:{'Authorization':'token '+cfg.token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
@@ -3336,14 +3339,19 @@ async function gsPull(){
     if(raw){
       var cloud=JSON.parse(raw);
       if(cloud&&cloud.docs!==undefined){
+        // Preserve local attachments (not synced) but take everything else from cloud
+        var localAttachments=DATA.attachments||{};
         DATA=cloud;
+        // Restore local attachments
+        DATA.attachments=localAttachments;
+        // Ensure driveLinks always exists
+        if(!DATA.driveLinks)DATA.driveLinks={};
+        // Patch other missing fields
         if(!DATA.members||!DATA.members.length)DATA.members=['Shailesh Koppikar','Anu Kumble','Ria Koppikar','Sunder Koppikar','Nalini Koppikar'];
         if(!DATA.customCategories)DATA.customCategories=[];
         if(!DATA.hiddenCols)DATA.hiddenCols={};
         if(!DATA.customCols)DATA.customCols={};
         if(!DATA.customScanTypes)DATA.customScanTypes={};
-        if(!DATA.attachments)DATA.attachments={};
-        if(!DATA.driveLinks)DATA.driveLinks={};
         ['docs','bank','insurance','passwords','medical','property','vehicles','notes'].forEach(function(t){if(!DATA[t])DATA[t]=[];});
         (DATA.customCategories||[]).forEach(function(cat){
           var tk='cat_'+cat.id;

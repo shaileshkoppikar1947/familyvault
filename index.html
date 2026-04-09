@@ -95,7 +95,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .grid-table th.sortable{cursor:pointer;user-select:none;}
 .grid-table th.sortable:hover{color:var(--text);}
 .sort-arrow{margin-left:4px;opacity:0.5;}
-.th-actions{width:80px;text-align:center;}
+.th-actions{width:100px;text-align:center;position:sticky;right:0;background:var(--surface2);z-index:2;box-shadow:-3px 0 6px rgba(0,0,0,0.06);}
+.td-actions{position:sticky;right:0;background:var(--surface);z-index:1;box-shadow:-3px 0 6px rgba(0,0,0,0.06);}
+.grid-table tbody tr:hover .td-actions{background:var(--surface2);}
+.grid-table tbody tr.editing .td-actions{background:#fffcf4;}
 .th-col-menu{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;cursor:pointer;color:var(--text3);font-size:12px;vertical-align:middle;margin-left:4px;}
 .th-col-menu:hover{background:var(--surface3);color:var(--text);}
 .grid-table tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s;}
@@ -378,21 +381,18 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .gdrive-hint a{color:var(--gold);}
 .gdrive-badge{display:inline-flex;align-items:center;gap:4px;background:#e8f0fe;color:#1a73e8;border-radius:10px;padding:1px 8px;font-size:10px;font-weight:600;font-family:var(--mono);}
 
-/* JSONBIN SYNC */
-.sync-bar{display:flex;align-items:center;gap:10px;padding:7px 20px;background:var(--surface);border-bottom:1px solid var(--border);font-size:12px;flex-wrap:wrap;position:sticky;top:53px;z-index:190;}
-.sync-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--border2);}
-.sync-dot.ok{background:var(--green);}
-.sync-dot.busy{background:var(--amber);animation:sdot 0.9s infinite;}
-.sync-dot.err{background:var(--red);}
-@keyframes sdot{0%,100%{opacity:1}50%{opacity:0.25}}
-.sync-label{color:var(--text3);font-family:var(--mono);}
-.sync-action{padding:3px 11px;font-size:11px;font-weight:600;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:var(--sans);}
-.sync-action:hover{background:var(--surface2);}
-.sync-action.blue{background:#1a73e8;color:#fff;border-color:#1a73e8;}
+/* DETAIL MODAL */
+.detail-modal{max-width:600px;}
+.detail-field{display:flex;border-bottom:1px solid var(--border);align-items:stretch;}
+.detail-field:last-child{border-bottom:none;}
+.detail-key{width:150px;flex-shrink:0;padding:9px 12px;font-size:11px;font-weight:600;color:var(--text3);font-family:var(--mono);background:var(--surface2);display:flex;align-items:center;text-transform:uppercase;letter-spacing:0.05em;}
+.detail-val{flex:1;padding:9px 12px;font-size:13px;color:var(--text);word-break:break-word;display:flex;align-items:center;flex-wrap:wrap;gap:6px;}
+.detail-section{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px;}
+.detail-drive-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;font-size:12px;font-weight:600;background:#1a73e8;color:#fff;border:none;border-radius:20px;cursor:pointer;text-decoration:none;}
 
-.update-banner{display:none;align-items:center;gap:10px;background:linear-gradient(135deg,#1a7a4a,#155f3a);color:#fff;padding:10px 16px;position:sticky;top:53px;z-index:160;flex-wrap:wrap;}
-.update-banner-text{flex:1;font-size:13px;font-weight:500;}
-.update-btn{padding:7px 16px;font-size:12px;font-weight:700;background:#fff;color:#1a7a4a;border:none;border-radius:20px;cursor:pointer;white-space:nowrap;}
+/* GOOGLE DRIVE LINK */
+.gdrive-preview{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:10px;}
+.gdrive-preview iframe{width:100%;height:300px;border:none;display:block;}
 
 /* INSTALL BANNER */
 .install-banner{
@@ -419,7 +419,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   .sidebar{display:none;}
   .main{padding:12px 14px 80px;}
   .top-bar{padding:10px 14px;}
-  .top-actions .tbtn:not(.gold):not(.red):not(.import-btn){display:none;}
+  .top-actions .tbtn:not(.gold):not(.red){display:none;}
   .top-actions{gap:6px;}
   .tbtn{padding:7px 12px;font-size:12px;}
   .mobile-nav{display:grid;}
@@ -461,13 +461,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
     <!-- Step 1: Password -->
     <div id="lock-step-pw">
-      <div style="position:relative;margin-bottom:12px">
-        <input type="password" class="lock-input" id="lock-pw" placeholder="Password" style="margin-bottom:0;padding-right:48px" onkeydown="if(event.key==='Enter')lockAction()"/>
-        <button onclick="toggleLockPw()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--text3);padding:4px" id="lock-pw-eye" title="Show/hide password">👁</button>
-      </div>
-      <div style="position:relative;margin-bottom:12px" id="lock-pw2-wrap" style="display:none">
-        <input type="password" class="lock-input" id="lock-pw2" placeholder="Confirm password" style="margin-bottom:0;display:none;padding-right:48px" onkeydown="if(event.key==='Enter')lockAction()"/>
-      </div>
+      <input type="password" class="lock-input" id="lock-pw" placeholder="Password" onkeydown="if(event.key==='Enter')lockAction()"/>
+      <input type="password" class="lock-input" id="lock-pw2" placeholder="Confirm password" style="display:none" onkeydown="if(event.key==='Enter')lockAction()"/>
       <button class="lock-btn" id="lock-action-btn" onclick="lockAction()">Unlock Vault</button>
       <div class="lock-err" id="lock-err"></div>
     </div>
@@ -609,6 +604,44 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 </div>
 
 
+<!-- RECORD DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal detail-modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap">
+      <h2 id="detail-modal-title" style="margin:0">Record</h2>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <button class="tbtn" onclick="detailEdit()">✏️ Edit</button>
+        <button class="tbtn" onclick="detailDrive()" style="border-color:#1a73e8;color:#1a73e8">🔗 Drive</button>
+        <button class="tbtn red" onclick="detailDelete()">🗑️ Delete</button>
+      </div>
+    </div>
+    <div id="detail-modal-body"></div>
+    <div class="modal-foot"><button class="btn btn-cancel" onclick="closeModal('detail-modal')">Close</button></div>
+  </div>
+</div>
+
+<!-- GOOGLE DRIVE LINK MODAL -->
+<div class="modal-overlay" id="gdrive-modal">
+  <div class="modal" style="max-width:500px">
+    <h2>🔗 Link Google Drive Document</h2>
+    <div class="fg">
+      <label>Google Drive Link</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="url" id="gdrive-url-input" placeholder="Paste Google Drive link…" oninput="onGdriveInput()" style="flex:1"/>
+        <a id="gdrive-open-btn" class="tbtn" target="_blank" style="display:none;border-color:var(--blue);color:var(--blue);text-decoration:none;white-space:nowrap">↗ Open</a>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.6">Right-click file in Drive → Share → Copy link. Set to "Anyone with the link" for preview.</div>
+    </div>
+    <div class="fg"><label>Label (optional)</label><input type="text" id="gdrive-label-input" placeholder="e.g. Passport Scan"/></div>
+    <div id="gdrive-preview-area"></div>
+    <div class="modal-foot">
+      <button class="btn btn-cancel" onclick="closeModal('gdrive-modal')">Cancel</button>
+      <button class="btn btn-danger" id="gdrive-remove-btn" onclick="removeGdriveLink()" style="display:none">Remove</button>
+      <button class="btn btn-primary" onclick="saveGdriveLink()">💾 Save Link</button>
+    </div>
+  </div>
+</div>
+
 <!-- SCAN CONFIRM COLUMNS MODAL -->
 <div class="modal-overlay" id="scan-confirm-modal">
   <div class="modal" style="max-width:600px">
@@ -657,7 +690,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="top-actions">
       <input type="file" id="import-file" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)"/>
       <input type="file" id="lp-csv-file" accept=".csv" style="display:none" onchange="importLastPassCSV(event)"/>
-      <button class="tbtn import-btn" onclick="document.getElementById('import-file').click()">⬆ Import</button>
+      <button class="tbtn" onclick="document.getElementById('import-file').click()">⬆ Import</button>
       <button class="tbtn" onclick="openScanModal()" style="border-color:var(--blue);color:var(--blue)">📷 Scan Doc</button>
       <button class="tbtn gold" onclick="exportExcel()">⬇ Export Excel</button>
       <button class="tbtn red" onclick="lockVault()">🔒 Lock</button>
@@ -665,21 +698,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   </div>
 
   <!-- INSTALL BANNER -->
-  <!-- SYNC BAR -->
-  <div class="sync-bar" id="sync-bar" style="display:none">
-    <div class="sync-dot" id="sync-dot"></div>
-    <span class="sync-label" id="sync-label">Cloud sync</span>
-    <button class="sync-action blue" id="sync-now-btn" onclick="gsSyncNow()" style="display:none">↻ Sync</button>
-    <button class="sync-action" id="sync-disconnect-btn" onclick="gsDisconnect()" style="display:none">Disconnect</button>
-    <span style="margin-left:auto;font-size:11px;color:var(--text3);font-family:var(--mono)" id="sync-time"></span>
-  </div>
-
-  <!-- UPDATE BANNER -->
-  <div class="update-banner" id="update-banner">
-    <div class="update-banner-text">🔄 <strong>New version available!</strong> Tap to get the latest update.</div>
-    <button class="update-btn" onclick="applyUpdate()">Update Now</button>
-    <button style="background:none;border:none;color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;padding:4px" onclick="document.getElementById('update-banner').style.display='none'">✕</button>
-  </div>
   <div class="install-banner" id="install-banner">
     <div class="install-banner-text">
       <strong>📱 Add Family Vault to Home Screen</strong>
@@ -839,22 +857,6 @@ var TAB_META={
 
 // ══ PASSWORD ══
 function hashPw(pw){var h=0;for(var i=0;i<pw.length;i++){h=((h<<5)-h)+pw.charCodeAt(i);h|=0;}return 'fvg_'+Math.abs(h).toString(36)+'_'+pw.length;}
-function toggleLockPw(){
-  var inp=document.getElementById('lock-pw');
-  var eye=document.getElementById('lock-pw-eye');
-  if(inp.type==='password'){inp.type='text';if(eye)eye.textContent='🙈';}
-  else{inp.type='password';if(eye)eye.textContent='👁';}
-}
-
-function applyUpdate(){
-  var banner=document.getElementById('update-banner');
-  if(banner)banner.innerHTML='<div class="update-banner-text">⏳ Updating...</div>';
-  if(window._newSW){
-    window._newSW.postMessage({type:'SKIP_WAITING'});
-  } else {
-    window.location.reload(true);
-  }
-}
 function lockAction(){if(_lockMode==='setup')doSetup();else doUnlock();}
 function doUnlock(){
   var pw=document.getElementById('lock-pw').value;
@@ -970,6 +972,7 @@ function loadData(){
     if(!DATA.customCols)DATA.customCols={};
     if(!DATA.customScanTypes)DATA.customScanTypes={};
     if(!DATA.attachments)DATA.attachments={};
+    if(!DATA.driveLinks)DATA.driveLinks={};
     if(!DATA.driveLinks)DATA.driveLinks={};
     // Re-register custom scan type prompts after page reload
     Object.keys(DATA.customScanTypes||{}).forEach(function(tab){
@@ -1202,9 +1205,9 @@ function renderGridSection(tab,meta){
 function renderRow(r,tab,cols,isEditing){
   var id=r.id;
   var editing=isEditing;
-  var h='<tr id="row-'+id+'" class="'+(editing?'editing':'')+'">';
+  var rowClick=editing?'':' onclick="openDetailModal(\''+tab+'\',\''+id+'\')" style="cursor:pointer"';
+  var h='<tr id="row-'+id+'" class="'+(editing?'editing':'')+'"'+rowClick+'>';
 
-  // name cell
   var nameCol={k:'name',l:getNameLabel(tab),type:'text',req:true};
   h+=renderCell(r,tab,nameCol,editing);
 
@@ -1213,19 +1216,17 @@ function renderRow(r,tab,cols,isEditing){
     h+=renderCell(r,tab,col,editing);
   });
 
-  h+='<td><div class="row-actions">';
+  h+='<td class="td-actions" onclick="event.stopPropagation()"><div class="row-actions">';
   if(editing){
     h+='<button class="icon-btn save-btn" title="Save" onclick="saveRowEdit(\''+tab+'\',\''+id+'\')">✓</button>';
     h+='<button class="icon-btn cancel-btn" title="Cancel" onclick="cancelRowEdit(\''+tab+'\',\''+id+'\')">✕</button>';
   } else {
-    // Show attachment button if this record has a scanned document
     var hasAttachment = DATA.attachments && DATA.attachments[id];
     if(hasAttachment){
       h+='<button class="icon-btn" title="View scanned document" onclick="viewAttachment(\''+id+'\')" style="color:var(--blue)">📎</button>';
     }
-    // Show Drive link button
     var hasDrive = DATA.driveLinks && DATA.driveLinks[id];
-    h+='<button class="icon-btn" title="'+(hasDrive?'View Google Drive document':'Link Google Drive document')+'" onclick="openGdriveModal(\''+tab+'\',\''+id+'\')" style="color:'+(hasDrive?'#1a73e8':'var(--text3)')+'">🔗</button>';
+    h+='<button class="icon-btn" title="'+(hasDrive?'View Drive doc':'Link Google Drive')+'" onclick="openGdriveModal(\''+tab+'\',\''+id+'\')" style="color:'+(hasDrive?'#1a73e8':'var(--text3)')+'">🔗</button>';
     h+='<button class="icon-btn" title="Edit" onclick="startRowEdit(\''+tab+'\',\''+id+'\')">✏️</button>';
     h+='<button class="icon-btn del-btn" title="Delete" onclick="askDelete(\''+tab+'\',\''+id+'\')">🗑️</button>';
   }
@@ -1644,44 +1645,7 @@ function renderSettings(){
     +'<div class="fg"><label>New Password</label><input type="password" id="chpw1" placeholder="New password"/></div>'
     +'<div class="fg"><label>Confirm</label><input type="password" id="chpw2" placeholder="Confirm"/></div>'
     +'</div><button class="tbtn gold" onclick="changePw()">Update Password</button></div>';
-
-  // GitHub Gist sync card
-  var gsCfg=gsGetConfig();
-  var gsConnected=!!(gsCfg.token&&gsCfg.gistId);
-  h+='<div class="settings-card" style="border-color:rgba(26,122,74,0.3)">'
-    +'<h3>☁ Cloud Sync (GitHub)</h3>'
-    +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7">'
-    +'Sync across all devices using your free GitHub account. Data saved as a private Gist — still password-protected.'
-    +'</p>'
-    +(gsConnected
-      ?'<div style="background:var(--green-l);border:1px solid rgba(26,122,74,0.2);border-radius:var(--r);padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--green)">✅ Connected — syncing automatically</div>'
-        +'<div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7">📱 <strong>Connect your phone or wife\'s device</strong> — tap the button below to generate a QR code. Just scan it on the other device — no typing needed!</div>'
-        +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'
-        +'<button class="tbtn gold" onclick="showSyncQR()">📱 Connect Another Device (QR)</button>'
-        +'<button class="tbtn" onclick="gsSyncNow()" style="border-color:var(--green);color:var(--green)">↻ Sync Now</button>'
-        +'<button class="tbtn red" onclick="gsDisconnect()">Disconnect</button>'
-        +'</div>'
-        +'<div id="sync-qr-area"></div>'
-      :'<details style="font-size:12px;color:var(--text2);margin-bottom:12px">'
-        +'<summary style="cursor:pointer;font-weight:600;color:var(--text);margin-bottom:6px">Setup steps (2 minutes, free)</summary>'
-        +'<ol style="padding-left:18px;line-height:2.2;margin-top:6px">'
-        +'<li>Go to <a href="https://github.com/settings/tokens/new" target="_blank" style="color:var(--gold)">github.com/settings/tokens/new</a></li>'
-        +'<li>Name it "FamilyVault" — set <strong>No expiration</strong></li>'
-        +'<li>Under Scopes tick only <strong>gist</strong></li>'
-        +'<li>Click <strong>Generate token</strong> → copy it</li>'
-        +'<li>Paste below → click Connect</li>'
-        +'</ol>'
-        +'</details>'
-        +'<div style="background:var(--blue-l);border:1px solid rgba(30,95,166,0.2);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--blue)">📱 <strong>Already connected on another device?</strong> Use that device to generate a QR code (Settings → Cloud Sync → Connect Another Device) and scan it here instead of typing.</div>'
-        +'<div class="fg"><label>GitHub Personal Access Token (gist scope only)</label>'
-        +'<input type="password" id="gs-token-inp" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"/>'
-        +'</div>'
-        +'<div class="fg"><label>Gist ID <span style="font-weight:400;color:var(--text3)">(leave blank to create new — or paste existing ID to join)</span></label>'
-        +'<input type="text" id="gs-gistid-inp" placeholder="0ce62064732d85dd5305f6a004b13182 (optional)"/>'
-        +'</div>'
-        +'<button class="tbtn gold" onclick="gsConnect()">☁ Connect & Sync</button>'
-        +'<div id="sync-qr-area" style="margin-top:12px"></div>')
-    +'</div>';
+  h+='<div class="settings-card" style="background:var(--red-l);border-color:rgba(176,42,26,0.2)">'
     +'<h3 style="color:var(--red)">⚠ Danger Zone</h3>'
     +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px">Clear all vault data. Export first.</p>'
     +'<button class="tbtn red" onclick="clearAll()">Clear All Data</button></div>';
@@ -2462,6 +2426,23 @@ function saveScanResults() {
   if (personVal) rec.member = personVal;
   if (!rec.name) rec.name = (_scanResults && _scanResults.name) ? _scanResults.name : 'Scanned Document';
 
+  // ── FIX: Auto-apply selected scan doc type as category ──
+  // If the tab has a 'category' column and a doc type chip is selected, use it
+  if(_scanDocType && existingKeys['category']){
+    var allTypes=(SCAN_DOC_TYPES[tab]||[]).concat((DATA.customScanTypes&&DATA.customScanTypes[tab])||[]);
+    var selectedType=allTypes.find(function(t){return t.id===_scanDocType;});
+    if(selectedType&&!rec.category){
+      // Strip emoji from label for the category value
+      rec.category=selectedType.label.replace(/^\S+\s*/,'').trim()||selectedType.label;
+    }
+  }
+  // Also for custom categories that have an entryType or category field
+  if(_scanDocType && existingKeys['entryType'] && !rec.entryType){
+    var allTypes2=(SCAN_DOC_TYPES[tab]||[]).concat((DATA.customScanTypes&&DATA.customScanTypes[tab])||[]);
+    var selType2=allTypes2.find(function(t){return t.id===_scanDocType;});
+    if(selType2) rec.entryType=selType2.label.replace(/^\S+\s*/,'').trim()||selType2.label;
+  }
+
   // Find any extra fields from AI response that aren't in existing columns
   var newCols = [];
   var skippedKeys = {};
@@ -2761,7 +2742,7 @@ function mobileNavTab(tab) {
   setTab(tab, null);
   document.querySelectorAll('.mnav-btn').forEach(function(b) { b.classList.remove('active'); });
   var btn = document.getElementById('mn-'+tab);
-  if(btn) btn.classList.add('active');
+  if (btn) btn.classList.add('active');
 }
 
 function updateMobileNav() {
@@ -2833,6 +2814,7 @@ renderTab = function() {
   updateMobileNav();
 };
 
+
 // ══ MODAL UTILS ══
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -2842,224 +2824,156 @@ document.addEventListener('click',function(e){
   if(cm&&!cm.contains(e.target))cm.classList.remove('open');
 });
 
-// ══ GITHUB GIST SYNC ══
-var GS_CFG_KEY='fvg_gs_cfg_v1';
-var _gsSaving=false;var _gsDirty=false;
+// ══ RECORD DETAIL MODAL ══
+var _detailTab=null,_detailId=null;
 
-function gsGetConfig(){try{return JSON.parse(localStorage.getItem(GS_CFG_KEY)||'{}')}catch(e){return {};}}
-function gsSaveConfig(o){localStorage.setItem(GS_CFG_KEY,JSON.stringify(o));}
-
-function gsSetUI(state,msg){
-  var bar=document.getElementById('sync-bar');
-  var dot=document.getElementById('sync-dot');
-  var label=document.getElementById('sync-label');
-  var nowBtn=document.getElementById('sync-now-btn');
-  var discBtn=document.getElementById('sync-disconnect-btn');
-  var timeEl=document.getElementById('sync-time');
-  if(!bar)return;
-  bar.style.display='flex';
-  dot.className='sync-dot'+(state==='ok'?' ok':state==='busy'?' busy':state==='err'?' err':'');
-  if(label)label.textContent='GitHub Sync: '+msg;
-  if(nowBtn)nowBtn.style.display=(state==='ok'||state==='err')?'':'none';
-  if(discBtn)discBtn.style.display=(state==='ok'||state==='err')?'':'none';
-  if(timeEl&&state==='ok'){var t=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});timeEl.textContent='Last sync: '+t;}
-}
-
-async function gsConnect(){
-  var token=(document.getElementById('gs-token-inp').value||'').trim();
-  var existingId=document.getElementById('gs-gistid-inp')?document.getElementById('gs-gistid-inp').value.trim():'';
-  if(!token){alert('Please paste your GitHub token.');return;}
-  gsSetUI('busy','Connecting…');
-  try{
-    var check=await fetch('https://api.github.com/user',{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}});
-    if(!check.ok)throw new Error('Invalid token — HTTP '+check.status);
-    var user=await check.json();
-    if(existingId){
-      // Join existing gist
-      var vresp=await fetch('https://api.github.com/gists/'+existingId,{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}});
-      if(!vresp.ok)throw new Error('Gist not found — check the Gist ID');
-      gsSaveConfig({token:token,gistId:existingId,user:user.login});
-      await gsPull();
-      alert('✅ Joined existing sync as @'+user.login+'!\n\nAll your vault data has been loaded.');
-      renderSettings();
+function openDetailModal(tab,id){
+  _detailTab=tab;_detailId=id;
+  var recs=DATA[tab]||[];
+  var r=recs.find(function(x){return x.id===id;});
+  if(!r)return;
+  var allCols=getAllCols(tab);
+  var meta=TAB_META[tab]||{label:tab,icon:'📄'};
+  document.getElementById('detail-modal-title').textContent=(meta.icon||'')+' '+(r.name||'Record');
+  var h='<div class="detail-section">';
+  allCols.forEach(function(col){
+    var val=r[col.k]||'';
+    if(!val)return;
+    var displayVal='';
+    if(col.secret&&val){
+      displayVal='<span class="cell-secret" onclick="this.classList.toggle(\'revealed\')" style="font-size:13px">'+esc(val)+'</span>';
+    } else if(col.type==='date'&&val){
+      var exp=new Date(val);var now=new Date();var days=Math.round((exp-now)/86400000);
+      var cls=col.expiry?(days<0?'cell-expired':days<90?'cell-expiring':'cell-ok'):'cell-date';
+      displayVal='<span class="'+cls+'">'+esc(val)+(days<0&&col.expiry?' ⚠ Expired':'')+(days>=0&&days<90&&col.expiry?' ('+days+'d left)':'')+'</span>';
+    } else if(col.type==='member'&&val){
+      displayVal='<span class="badge b-green">'+esc(val)+'</span>';
+    } else if(col.type==='country'&&val&&val!=='N/A'){
+      var flag=val==='USA'?'🇺🇸':val==='India'?'🇮🇳':val==='Both'?'🇺🇸🇮🇳':'🌍';
+      displayVal='<span class="badge b-blue">'+flag+' '+esc(val)+'</span>';
     } else {
-      // Create new gist
-      var resp=await fetch('https://api.github.com/gists',{
-        method:'POST',
-        headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
-        body:JSON.stringify({description:'FamilyVault Data',public:false,files:{'familyvault.json':{content:JSON.stringify(DATA)}}})
-      });
-      if(!resp.ok)throw new Error('Gist create failed — HTTP '+resp.status);
-      var gist=await resp.json();
-      gsSaveConfig({token:token,gistId:gist.id,user:user.login});
-      gsSetUI('ok','✓ synced');
-      alert('✅ Connected as @'+user.login+'!\n\nTo connect other devices:\n1. Go to Settings → Cloud Sync\n2. Enter a new GitHub token\n3. Enter Gist ID: '+gist.id);
-      renderSettings();
+      displayVal='<span>'+esc(val)+'</span>';
     }
-  }catch(e){
-    gsSetUI('err','Connection failed');
-    alert('Connection failed: '+e.message);
+    h+='<div class="detail-field"><div class="detail-key">'+esc(col.l)+'</div><div class="detail-val">'+displayVal+'</div></div>';
+  });
+  h+='</div>';
+  // Drive link preview
+  var drive=DATA.driveLinks&&DATA.driveLinks[id];
+  if(drive&&drive.url){
+    var previewUrl=gdriveToPreviewUrl(drive.url);
+    h+='<div class="detail-section"><div class="detail-field"><div class="detail-key">Drive Doc</div><div class="detail-val">';
+    h+='<a href="'+esc(drive.url)+'" target="_blank" class="detail-drive-btn">↗ Open in Drive'+(drive.label?' — '+esc(drive.label):'')+'</a>';
+    h+='</div></div>';
+    if(previewUrl)h+='<div style="padding:8px"><iframe src="'+esc(previewUrl)+'" style="width:100%;height:260px;border:none;border-radius:4px" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups"></iframe></div>';
+    h+='</div>';
+  }
+  // Attachment
+  var att=DATA.attachments&&DATA.attachments[id];
+  if(att){
+    h+='<div class="detail-section"><div class="detail-field"><div class="detail-key">Attachment</div><div class="detail-val">';
+    h+='<button class="tbtn" onclick="viewAttachment(\''+id+'\')" style="border-color:var(--blue);color:var(--blue)">📎 '+esc(att.name||'View')+'</button>';
+    h+='</div></div></div>';
+  }
+  document.getElementById('detail-modal-body').innerHTML=h;
+  openModal('detail-modal');
+}
+
+function detailEdit(){
+  closeModal('detail-modal');
+  if(_detailTab&&_detailId){
+    if(ACTIVE_TAB!==_detailTab){setTab(_detailTab,null);}
+    setTimeout(function(){startRowEdit(_detailTab,_detailId);},100);
+  }
+}
+function detailDrive(){closeModal('detail-modal');if(_detailTab&&_detailId)openGdriveModal(_detailTab,_detailId);}
+function detailDelete(){closeModal('detail-modal');if(_detailTab&&_detailId)askDelete(_detailTab,_detailId);}
+
+// ══ GOOGLE DRIVE LINKS ══
+var _gdriveRowId=null,_gdriveTab=null;
+
+function openGdriveModal(tab,id){
+  _gdriveTab=tab;_gdriveRowId=id;
+  var existing=(DATA.driveLinks&&DATA.driveLinks[id])||{};
+  document.getElementById('gdrive-url-input').value=existing.url||'';
+  document.getElementById('gdrive-label-input').value=existing.label||'';
+  document.getElementById('gdrive-remove-btn').style.display=existing.url?'':'none';
+  var openBtn=document.getElementById('gdrive-open-btn');
+  if(openBtn){openBtn.href=existing.url||'#';openBtn.style.display=existing.url?'':'none';}
+  updateGdrivePreview(existing.url||'');
+  openModal('gdrive-modal');
+}
+
+function gdriveToPreviewUrl(url){
+  if(!url)return null;
+  var fileId=null;
+  var m=url.match(/\/d\/([a-zA-Z0-9_-]{10,})/);if(m)fileId=m[1];
+  if(!fileId){m=url.match(/id=([a-zA-Z0-9_-]{10,})/);if(m)fileId=m[1];}
+  if(fileId)return 'https://drive.google.com/file/d/'+fileId+'/preview';
+  var docM=url.match(/docs\.google\.com\/(document|spreadsheets|presentation)\/d\/([a-zA-Z0-9_-]{10,})/);
+  if(docM)return 'https://docs.google.com/'+docM[1]+'/d/'+docM[2]+'/preview';
+  return null;
+}
+
+function onGdriveInput(){
+  var url=document.getElementById('gdrive-url-input').value.trim();
+  updateGdrivePreview(url);
+  var openBtn=document.getElementById('gdrive-open-btn');
+  if(openBtn){openBtn.href=url||'#';openBtn.style.display=url?'':'none';}
+}
+
+function updateGdrivePreview(url){
+  var area=document.getElementById('gdrive-preview-area');if(!area)return;
+  var previewUrl=gdriveToPreviewUrl(url);
+  if(previewUrl){
+    area.innerHTML='<div class="gdrive-preview"><iframe src="'+esc(previewUrl)+'" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups"></iframe></div>';
+  } else if(url){
+    area.innerHTML='<div style="padding:10px;background:var(--surface2);border-radius:var(--r);font-size:12px;color:var(--text3);margin-top:8px">📄 Preview not available — will open in Drive when clicked.</div>';
+  } else {area.innerHTML='';}
+}
+
+function saveGdriveLink(){
+  var url=(document.getElementById('gdrive-url-input').value||'').trim();
+  var label=(document.getElementById('gdrive-label-input').value||'').trim();
+  if(!url){alert('Please paste a Google Drive link.');return;}
+  if(!DATA.driveLinks)DATA.driveLinks={};
+  DATA.driveLinks[_gdriveRowId]={url:url,label:label,savedAt:new Date().toISOString()};
+  save();closeModal('gdrive-modal');
+  var tab=_gdriveTab,id=_gdriveRowId;
+  var recs=DATA[tab]||[];var r=recs.find(function(x){return x.id===id;});
+  if(r){var cols=getVisibleCols(tab);var row=document.getElementById('row-'+id);if(row){var tmp=document.createElement('table');tmp.innerHTML='<tbody>'+renderRow(r,tab,cols,false)+'</tbody>';var nr=tmp.querySelector('tr');if(nr)row.replaceWith(nr);}}
+}
+
+function removeGdriveLink(){
+  if(!confirm('Remove Google Drive link?'))return;
+  if(DATA.driveLinks&&DATA.driveLinks[_gdriveRowId])delete DATA.driveLinks[_gdriveRowId];
+  save();closeModal('gdrive-modal');
+  var tab=_gdriveTab,id=_gdriveRowId;
+  var recs=DATA[tab]||[];var r=recs.find(function(x){return x.id===id;});
+  if(r){var cols=getVisibleCols(tab);var row=document.getElementById('row-'+id);if(row){var tmp=document.createElement('table');tmp.innerHTML='<tbody>'+renderRow(r,tab,cols,false)+'</tbody>';var nr=tmp.querySelector('tr');if(nr)row.replaceWith(nr);}}
+}
+
+function viewAttachment(id){
+  var att=DATA.attachments&&DATA.attachments[id];
+  if(!att)return;
+  if(att.mime&&att.mime.startsWith('image/')){
+    var overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer';
+    overlay.onclick=function(){document.body.removeChild(overlay);};
+    var img=document.createElement('img');
+    img.src=att.data;img.style.cssText='max-width:90vw;max-height:80vh;border-radius:8px';
+    var dlBtn=document.createElement('a');dlBtn.href=att.data;dlBtn.download=att.name;
+    dlBtn.onclick=function(e){e.stopPropagation();};
+    dlBtn.style.cssText='background:var(--gold);color:#fff;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none';
+    dlBtn.textContent='⬇ Download';
+    overlay.appendChild(img);overlay.appendChild(dlBtn);document.body.appendChild(overlay);
+  } else {
+    var a=document.createElement('a');a.href=att.data;a.download=att.name||'document.pdf';a.click();
   }
 }
 
-async function gsPush(){
-  var cfg=gsGetConfig();if(!cfg.token||!cfg.gistId)return;
-  if(_gsSaving){_gsDirty=true;return;}
-  _gsSaving=true;gsSetUI('busy','Saving…');
-  try{
-    var payload=JSON.parse(JSON.stringify(DATA));
-    delete payload.attachments;payload.attachments={};
-    var resp=await fetch('https://api.github.com/gists/'+cfg.gistId,{
-      method:'PATCH',
-      headers:{'Authorization':'token '+cfg.token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
-      body:JSON.stringify({files:{'familyvault.json':{content:JSON.stringify(payload)}}})
-    });
-    if(!resp.ok)throw new Error('HTTP '+resp.status);
-    gsSetUI('ok','✓ synced');
-  }catch(e){
-    console.error('gsPush',e);gsSetUI('err','Save failed — retrying');
-    setTimeout(gsPush,15000);
-  }finally{
-    _gsSaving=false;if(_gsDirty){_gsDirty=false;gsPush();}
-  }
-}
-
-async function gsPull(){
-  var cfg=gsGetConfig();if(!cfg.token||!cfg.gistId)return;
-  gsSetUI('busy','Loading from cloud…');
-  try{
-    var resp=await fetch('https://api.github.com/gists/'+cfg.gistId,{
-      headers:{'Authorization':'token '+cfg.token,'Accept':'application/vnd.github.v3+json'}
-    });
-    if(resp.status===401)throw new Error('Token expired or invalid — reconnect in Settings → Cloud Sync');
-    if(resp.status===404)throw new Error('Gist not found — check Gist ID');
-    if(!resp.ok)throw new Error('GitHub error: HTTP '+resp.status);
-    var gist=await resp.json();
-    var fileObj=gist.files&&gist.files['familyvault.json'];
-    if(!fileObj)throw new Error('No vault file found in gist');
-
-    var raw=fileObj.content;
-
-    // GitHub truncates files > 1MB — fetch raw_url for full content
-    if(fileObj.truncated&&fileObj.raw_url){
-      var rawResp=await fetch(fileObj.raw_url,{
-        headers:{'Authorization':'token '+cfg.token}
-      });
-      if(!rawResp.ok)throw new Error('Failed to fetch full content: HTTP '+rawResp.status);
-      raw=await rawResp.text();
-    }
-
-    if(raw){
-      var cloud=JSON.parse(raw);
-      if(cloud&&cloud.docs!==undefined){
-        DATA=cloud;
-        if(!DATA.members||!DATA.members.length)DATA.members=['Shailesh Koppikar','Anu Kumble','Ria Koppikar','Sunder Koppikar','Nalini Koppikar'];
-        if(!DATA.customCategories)DATA.customCategories=[];
-        if(!DATA.hiddenCols)DATA.hiddenCols={};
-        if(!DATA.customCols)DATA.customCols={};
-        if(!DATA.customScanTypes)DATA.customScanTypes={};
-        if(!DATA.attachments)DATA.attachments={};
-        if(!DATA.driveLinks)DATA.driveLinks={};
-        ['docs','bank','insurance','passwords','medical','property','vehicles','notes'].forEach(function(t){if(!DATA[t])DATA[t]=[];});
-        (DATA.customCategories||[]).forEach(function(cat){
-          var tk='cat_'+cat.id;
-          if(!TAB_META[tk])TAB_META[tk]={label:cat.name,icon:cat.icon,nameLabel:cat.name+' Name'};
-          if(!DATA[tk])DATA[tk]=[];
-          if(!SCHEMAS[tk])SCHEMAS[tk]=[{k:'member',l:'Person',type:'member'},{k:'notes',l:'Notes',type:'text'}];
-        });
-        try{localStorage.setItem(VAULT_KEY,JSON.stringify(DATA));}catch(ex){}
-        renderSidebar();renderTab();
-      } else {
-        throw new Error('Vault data format invalid');
-      }
-    } else {
-      throw new Error('Vault file is empty');
-    }
-    gsSetUI('ok','✓ synced');
-  }catch(e){
-    console.error('gsPull',e);
-    gsSetUI('err',e.message||'Load failed');
-    // Show error in sync bar label so user can see the actual problem
-    var label=document.getElementById('sync-label');
-    if(label)label.textContent='Sync error: '+e.message;
-  }
-}
-
-function gsSyncNow(){gsPull();}
-function gsDisconnect(){
-  if(!confirm('Disconnect cloud sync?\n\nLocal data stays safe.'))return;
-  gsSaveConfig({});
-  var bar=document.getElementById('sync-bar');if(bar)bar.style.display='none';
-  renderSettings();
-}
-
-// Generate QR code containing token+gistId so mobile can scan to connect instantly
-function showSyncQR(){
-  var cfg=gsGetConfig();
-  if(!cfg.token||!cfg.gistId){alert('Not connected yet.');return;}
-  var area=document.getElementById('sync-qr-area');
-  if(!area)return;
-
-  // Encode as a special URL that the vault recognises
-  var payload=btoa(JSON.stringify({token:cfg.token,gistId:cfg.gistId}));
-  var connectUrl=window.location.origin+window.location.pathname+'?syncsetup='+payload;
-  var qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(connectUrl);
-
-  // Check if already showing — toggle off
-  if(area.innerHTML){area.innerHTML='';return;}
-
-  area.innerHTML=
-    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px;text-align:center;margin-top:8px">'
-    +'<div style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--text)">📱 Scan this on your phone / another device</div>'
-    +'<img src="'+esc(qrUrl)+'" width="200" height="200" style="border:6px solid #fff;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.15)" alt="Sync QR Code"/>'
-    +'<div style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6">Open Family Vault on the other device → Settings → Cloud Sync<br/>then tap <strong>Scan QR from this device</strong><br/>OR just open the camera app and scan — it connects automatically!</div>'
-    +'<div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'
-    +'<button class="tbtn" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+connectUrl+'\').then(function(){alert(\'Link copied! Paste it in the browser on your other device.\')})">📋 Copy Link Instead</button>'
-    +'<button class="tbtn" onclick="document.getElementById(\'sync-qr-area\').innerHTML=\'\'">Hide QR</button>'
-    +'</div>'
-    +'<div style="font-size:11px;color:var(--red);margin-top:8px;font-weight:600">⚠ Keep this QR private — it contains your sync credentials</div>'
-    +'</div>';
-}
-
-// Auto-connect from QR scan URL
-function checkSyncSetupURL(){
-  var params=new URLSearchParams(window.location.search);
-  var setup=params.get('syncsetup');
-  if(!setup)return;
-  try{
-    var cfg=JSON.parse(atob(setup));
-    if(!cfg.token||!cfg.gistId)return;
-    // Clean URL
-    window.history.replaceState({},'',window.location.pathname);
-    // Ask user to confirm
-    if(confirm('📱 Connect cloud sync from QR code?\n\nThis will sync your vault with the shared data immediately.')){
-      gsSaveConfig({token:cfg.token,gistId:cfg.gistId,user:'shared'});
-      gsSetUI('busy','Loading vault from cloud…');
-      gsPull().then(function(){
-        alert('✅ Connected! Your vault data has been loaded.');
-        renderSettings();
-      });
-    }
-  }catch(e){console.error('syncsetup parse error',e);}
-}
-
-var _origSave=save;
-save=function(){
-  _origSave();
-  var cfg=gsGetConfig();
-  if(cfg.token&&cfg.gistId)gsPush();
-};
-
-var _origShowApp=showApp;
-showApp=function(){
-  _origShowApp();
-  checkSyncSetupURL();
-  var cfg=gsGetConfig();
-  if(cfg.token&&cfg.gistId){
-    gsSetUI('busy','Loading from cloud…');
-    gsPull();
-  }
-};
+// ══ INITIALIZE MISSING DATA FIELDS ══
+if(!DATA.driveLinks)DATA.driveLinks={};
+if(!DATA.attachments)DATA.attachments={};
 </script>
 
 <!-- MOBILE BOTTOM NAV -->
@@ -3067,17 +2981,17 @@ showApp=function(){
   <button class="mnav-btn" onclick="mobileNavTab('docs')" id="mn-docs">
     <span class="mico">🪪</span><span>Docs</span>
   </button>
-  <button class="mnav-btn" onclick="mobileNavTab('passwords')" id="mn-passwords">
-    <span class="mico">🔑</span><span>Passwords</span>
-  </button>
   <button class="mnav-btn" onclick="mobileNavTab('bank')" id="mn-bank">
     <span class="mico">🏦</span><span>Bank</span>
+  </button>
+  <button class="mnav-btn" onclick="mobileNavTab('vehicles')" id="mn-vehicles">
+    <span class="mico">🚗</span><span>Cars</span>
   </button>
   <button class="mnav-btn" onclick="mobileNavTab('medical')" id="mn-medical">
     <span class="mico">🏥</span><span>Medical</span>
   </button>
-  <button class="mnav-btn" onclick="mobileNavTab('settings')" id="mn-settings">
-    <span class="mico">⚙️</span><span>Settings</span>
+  <button class="mnav-btn" onclick="mobileNavTab('notes')" id="mn-more">
+    <span class="mico">☰</span><span>More</span>
   </button>
 </nav>
 
@@ -3168,80 +3082,14 @@ showApp=function(){
   var manifestLink = document.getElementById('pwa-manifest');
   if (manifestLink) manifestLink.href = manifestUrl;
 
-  // Service worker: network-first with auto-update detection
+  // Service worker: only register when served from http/https (not file://)
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    var swScript = `
-var CACHE="fv-v9";
-var PAGE_URL=self.location.origin+"/familyvault/";
-
-// Install — skip waiting immediately so new SW activates fast
-self.addEventListener("install",function(e){
-  self.skipWaiting();
-});
-
-// Activate — clear old caches
-self.addEventListener("activate",function(e){
-  e.waitUntil(
-    caches.keys().then(function(keys){
-      return Promise.all(keys.filter(function(k){return k!==CACHE;}).map(function(k){return caches.delete(k);}));
-    }).then(function(){return self.clients.claim();})
-  );
-});
-
-// Fetch — network first, cache fallback
-self.addEventListener("fetch",function(e){
-  if(e.request.method!=="GET")return;
-  e.respondWith(
-    fetch(e.request).then(function(resp){
-      var clone=resp.clone();
-      caches.open(CACHE).then(function(c){c.put(e.request,clone);});
-      return resp;
-    }).catch(function(){
-      return caches.match(e.request);
-    })
-  );
-});
-
-// Listen for update check message from page
-self.addEventListener("message",function(e){
-  if(e.data==="CHECK_UPDATE"){
-    self.registration.update();
-  }
-});
-`;
+    // Write SW as a data URI workaround — inject as a real script element
+    var swScript = 'var CACHE="fv-v8"; self.addEventListener("install",function(e){self.skipWaiting();}); self.addEventListener("activate",function(e){e.waitUntil(clients.claim());}); self.addEventListener("fetch",function(e){e.respondWith(caches.open(CACHE).then(function(c){return c.match(e.request).then(function(r){return r||fetch(e.request).then(function(resp){c.put(e.request,resp.clone());return resp;});});}));});';
     try {
       var swBlob = new Blob([swScript], {type: 'application/javascript'});
       var swUrl = URL.createObjectURL(swBlob);
-      navigator.serviceWorker.register(swUrl).then(function(reg){
-        // Check for updates every time app opens
-        reg.update();
-
-        // When a new SW is waiting — show update banner
-        reg.addEventListener('updatefound', function(){
-          var newWorker = reg.installing;
-          if(!newWorker) return;
-          newWorker.addEventListener('statechange', function(){
-            if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
-              // New version ready — show banner
-              var banner = document.getElementById('update-banner');
-              if(banner) banner.style.display = 'flex';
-              window._newSW = newWorker;
-            }
-          });
-        });
-
-        // Also check for updates every 5 minutes while app is open
-        setInterval(function(){ reg.update(); }, 5 * 60 * 1000);
-
-      }).catch(function(){});
-
-      // When SW controller changes — reload to get fresh version
-      navigator.serviceWorker.addEventListener('controllerchange', function(){
-        if(window._swReloading) return;
-        window._swReloading = true;
-        window.location.reload();
-      });
-
+      navigator.serviceWorker.register(swUrl).catch(function(){});
     } catch(e) {}
   }
 

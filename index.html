@@ -1632,13 +1632,13 @@ function renderSettings(){
         +'<summary style="cursor:pointer;font-weight:600;color:var(--text);margin-bottom:6px">Setup steps (2 minutes, free)</summary>'
         +'<ol style="padding-left:18px;line-height:2.2;margin-top:6px">'
         +'<li>Go to <a href="https://jsonbin.io" target="_blank" style="color:var(--gold)">jsonbin.io</a> → Sign up free</li>'
-        +'<li>Go to <strong>API Keys</strong> → click <strong>Create Access Key</strong></li>'
-        +'<li>Copy the Access Key (starts with $2a$10$...)</li>'
+        +'<li>Go to <strong>API Keys</strong> → copy your <strong>X-Master-Key</strong></li>'
         +'<li>Paste it below → click Connect</li>'
+        +'<li>Done! Syncs automatically across all devices</li>'
         +'</ol>'
         +'</details>'
-        +'<div class="fg"><label>JSONBin Access Key</label>'
-        +'<input type="password" id="jb-key-inp" placeholder="Paste your Access Key here…"/>'
+        +'<div class="fg"><label>JSONBin Master Key (X-Master-Key)</label>'
+        +'<input type="password" id="jb-key-inp" placeholder="Paste your Master Key here…"/>'
         +'</div>'
         +'<button class="tbtn gold" onclick="jbConnect()">☁ Connect & Sync</button>')
     +'</div>';
@@ -2848,7 +2848,7 @@ async function jbConnect(){
       method:'POST',
       headers:{
         'Content-Type':'application/json',
-        'X-Access-Key':key,
+        'X-Master-Key':key,
         'X-Bin-Name':'FamilyVault',
         'X-Bin-Private':'true'
       },
@@ -2863,7 +2863,7 @@ async function jbConnect(){
     renderSettings();
   }catch(e){
     jbSetUI('err','Connection failed');
-    alert('Connection failed: '+e.message+'\n\nMake sure you used the Access Key (not Master Key).');
+    alert('Connection failed: '+e.message+'\n\nMake sure you used the X-Master-Key from jsonbin.io → API Keys.');
   }
 }
 
@@ -2884,7 +2884,7 @@ async function jbPush(){
       method:'PUT',
       headers:{
         'Content-Type':'application/json',
-        'X-Access-Key':cfg.key
+        'X-Master-Key':cfg.key
       },
       body:JSON.stringify(payload)
     });
@@ -2907,7 +2907,7 @@ async function jbPull(){
   jbSetUI('busy','Loading from cloud…');
   try{
     var resp=await fetch('https://api.jsonbin.io/v3/b/'+cfg.binId+'/latest',{
-      headers:{'X-Access-Key':cfg.key}
+      headers:{'X-Master-Key':cfg.key}
     });
     if(!resp.ok)throw new Error('HTTP '+resp.status);
     var result=await resp.json();

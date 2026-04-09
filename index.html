@@ -281,7 +281,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .mobile-nav{
   display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;
   background:var(--surface);border-top:1px solid var(--border);
-  display:none;grid-template-columns:repeat(6,1fr);
+  display:none;grid-template-columns:repeat(5,1fr);
   padding:6px 0 max(6px,env(safe-area-inset-bottom));
 }
 .mnav-btn{
@@ -390,6 +390,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .sync-action:hover{background:var(--surface2);}
 .sync-action.blue{background:#1a73e8;color:#fff;border-color:#1a73e8;}
 
+.update-banner{display:none;align-items:center;gap:10px;background:linear-gradient(135deg,#1a7a4a,#155f3a);color:#fff;padding:10px 16px;position:sticky;top:53px;z-index:160;flex-wrap:wrap;}
+.update-banner-text{flex:1;font-size:13px;font-weight:500;}
+.update-btn{padding:7px 16px;font-size:12px;font-weight:700;background:#fff;color:#1a7a4a;border:none;border-radius:20px;cursor:pointer;white-space:nowrap;}
+
 /* INSTALL BANNER */
 .install-banner{
   display:none;align-items:center;gap:10px;
@@ -457,8 +461,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
     <!-- Step 1: Password -->
     <div id="lock-step-pw">
-      <input type="password" class="lock-input" id="lock-pw" placeholder="Password" onkeydown="if(event.key==='Enter')lockAction()"/>
-      <input type="password" class="lock-input" id="lock-pw2" placeholder="Confirm password" style="display:none" onkeydown="if(event.key==='Enter')lockAction()"/>
+      <div style="position:relative;margin-bottom:12px">
+        <input type="password" class="lock-input" id="lock-pw" placeholder="Password" style="margin-bottom:0;padding-right:48px" onkeydown="if(event.key==='Enter')lockAction()"/>
+        <button onclick="toggleLockPw()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--text3);padding:4px" id="lock-pw-eye" title="Show/hide password">👁</button>
+      </div>
+      <div style="position:relative;margin-bottom:12px" id="lock-pw2-wrap" style="display:none">
+        <input type="password" class="lock-input" id="lock-pw2" placeholder="Confirm password" style="margin-bottom:0;display:none;padding-right:48px" onkeydown="if(event.key==='Enter')lockAction()"/>
+      </div>
       <button class="lock-btn" id="lock-action-btn" onclick="lockAction()">Unlock Vault</button>
       <div class="lock-err" id="lock-err"></div>
     </div>
@@ -660,9 +669,16 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   <div class="sync-bar" id="sync-bar" style="display:none">
     <div class="sync-dot" id="sync-dot"></div>
     <span class="sync-label" id="sync-label">Cloud sync</span>
-    <button class="sync-action blue" id="sync-now-btn" onclick="jbSyncNow()" style="display:none">↻ Sync</button>
-    <button class="sync-action" id="sync-disconnect-btn" onclick="jbDisconnect()" style="display:none">Disconnect</button>
+    <button class="sync-action blue" id="sync-now-btn" onclick="gsSyncNow()" style="display:none">↻ Sync</button>
+    <button class="sync-action" id="sync-disconnect-btn" onclick="gsDisconnect()" style="display:none">Disconnect</button>
     <span style="margin-left:auto;font-size:11px;color:var(--text3);font-family:var(--mono)" id="sync-time"></span>
+  </div>
+
+  <!-- UPDATE BANNER -->
+  <div class="update-banner" id="update-banner">
+    <div class="update-banner-text">🔄 <strong>New version available!</strong> Tap to get the latest update.</div>
+    <button class="update-btn" onclick="applyUpdate()">Update Now</button>
+    <button style="background:none;border:none;color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;padding:4px" onclick="document.getElementById('update-banner').style.display='none'">✕</button>
   </div>
   <div class="install-banner" id="install-banner">
     <div class="install-banner-text">
@@ -823,6 +839,22 @@ var TAB_META={
 
 // ══ PASSWORD ══
 function hashPw(pw){var h=0;for(var i=0;i<pw.length;i++){h=((h<<5)-h)+pw.charCodeAt(i);h|=0;}return 'fvg_'+Math.abs(h).toString(36)+'_'+pw.length;}
+function toggleLockPw(){
+  var inp=document.getElementById('lock-pw');
+  var eye=document.getElementById('lock-pw-eye');
+  if(inp.type==='password'){inp.type='text';if(eye)eye.textContent='🙈';}
+  else{inp.type='password';if(eye)eye.textContent='👁';}
+}
+
+function applyUpdate(){
+  var banner=document.getElementById('update-banner');
+  if(banner)banner.innerHTML='<div class="update-banner-text">⏳ Updating...</div>';
+  if(window._newSW){
+    window._newSW.postMessage({type:'SKIP_WAITING'});
+  } else {
+    window.location.reload(true);
+  }
+}
 function lockAction(){if(_lockMode==='setup')doSetup();else doUnlock();}
 function doUnlock(){
   var pw=document.getElementById('lock-pw').value;
@@ -2956,17 +2988,14 @@ showApp=function(){
   <button class="mnav-btn" onclick="mobileNavTab('docs')" id="mn-docs">
     <span class="mico">🪪</span><span>Docs</span>
   </button>
+  <button class="mnav-btn" onclick="mobileNavTab('passwords')" id="mn-passwords">
+    <span class="mico">🔑</span><span>Passwords</span>
+  </button>
   <button class="mnav-btn" onclick="mobileNavTab('bank')" id="mn-bank">
     <span class="mico">🏦</span><span>Bank</span>
   </button>
-  <button class="mnav-btn" onclick="mobileNavTab('vehicles')" id="mn-vehicles">
-    <span class="mico">🚗</span><span>Cars</span>
-  </button>
   <button class="mnav-btn" onclick="mobileNavTab('medical')" id="mn-medical">
     <span class="mico">🏥</span><span>Medical</span>
-  </button>
-  <button class="mnav-btn" onclick="mobileNavTab('notes')" id="mn-notes">
-    <span class="mico">📝</span><span>Notes</span>
   </button>
   <button class="mnav-btn" onclick="mobileNavTab('settings')" id="mn-settings">
     <span class="mico">⚙️</span><span>Settings</span>
@@ -3060,14 +3089,80 @@ showApp=function(){
   var manifestLink = document.getElementById('pwa-manifest');
   if (manifestLink) manifestLink.href = manifestUrl;
 
-  // Service worker: only register when served from http/https (not file://)
+  // Service worker: network-first with auto-update detection
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    // Write SW as a data URI workaround — inject as a real script element
-    var swScript = 'var CACHE="fv-v8"; self.addEventListener("install",function(e){self.skipWaiting();}); self.addEventListener("activate",function(e){e.waitUntil(clients.claim());}); self.addEventListener("fetch",function(e){e.respondWith(caches.open(CACHE).then(function(c){return c.match(e.request).then(function(r){return r||fetch(e.request).then(function(resp){c.put(e.request,resp.clone());return resp;});});}));});';
+    var swScript = `
+var CACHE="fv-v9";
+var PAGE_URL=self.location.origin+"/familyvault/";
+
+// Install — skip waiting immediately so new SW activates fast
+self.addEventListener("install",function(e){
+  self.skipWaiting();
+});
+
+// Activate — clear old caches
+self.addEventListener("activate",function(e){
+  e.waitUntil(
+    caches.keys().then(function(keys){
+      return Promise.all(keys.filter(function(k){return k!==CACHE;}).map(function(k){return caches.delete(k);}));
+    }).then(function(){return self.clients.claim();})
+  );
+});
+
+// Fetch — network first, cache fallback
+self.addEventListener("fetch",function(e){
+  if(e.request.method!=="GET")return;
+  e.respondWith(
+    fetch(e.request).then(function(resp){
+      var clone=resp.clone();
+      caches.open(CACHE).then(function(c){c.put(e.request,clone);});
+      return resp;
+    }).catch(function(){
+      return caches.match(e.request);
+    })
+  );
+});
+
+// Listen for update check message from page
+self.addEventListener("message",function(e){
+  if(e.data==="CHECK_UPDATE"){
+    self.registration.update();
+  }
+});
+`;
     try {
       var swBlob = new Blob([swScript], {type: 'application/javascript'});
       var swUrl = URL.createObjectURL(swBlob);
-      navigator.serviceWorker.register(swUrl).catch(function(){});
+      navigator.serviceWorker.register(swUrl).then(function(reg){
+        // Check for updates every time app opens
+        reg.update();
+
+        // When a new SW is waiting — show update banner
+        reg.addEventListener('updatefound', function(){
+          var newWorker = reg.installing;
+          if(!newWorker) return;
+          newWorker.addEventListener('statechange', function(){
+            if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
+              // New version ready — show banner
+              var banner = document.getElementById('update-banner');
+              if(banner) banner.style.display = 'flex';
+              window._newSW = newWorker;
+            }
+          });
+        });
+
+        // Also check for updates every 5 minutes while app is open
+        setInterval(function(){ reg.update(); }, 5 * 60 * 1000);
+
+      }).catch(function(){});
+
+      // When SW controller changes — reload to get fresh version
+      navigator.serviceWorker.addEventListener('controllerchange', function(){
+        if(window._swReloading) return;
+        window._swReloading = true;
+        window.location.reload();
+      });
+
     } catch(e) {}
   }
 

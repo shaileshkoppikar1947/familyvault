@@ -498,6 +498,23 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="lock-icon">🔐</div>
     <div class="lock-title" id="lock-title">Family Vault</div>
     <div class="lock-sub" id="lock-sub">Enter your master password to access the vault.</div>
+    <div id="lock-version-info" style="font-size:11px;color:var(--text3);font-family:var(--mono);margin:-20px 0 16px;line-height:1.8;text-align:center">
+      <span style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 8px">v13 — 2026-04-09</span><br/>
+      <span id="lock-url-display" style="font-size:10px;opacity:0.7;word-break:break-all"></span>
+    </div>
+    <script>
+      (function(){
+        var el=document.getElementById('lock-url-display');
+        if(!el)return;
+        var href=window.location.href;
+        if(href.startsWith('file://')){
+          var parts=href.split(/[/\\]/);
+          el.textContent=decodeURIComponent(parts[parts.length-1]);
+        } else {
+          el.textContent=href.replace(/^https?:\/\//,'');
+        }
+      })();
+    </script>
 
     <!-- Step 1: Password -->
     <div id="lock-step-pw">

@@ -2147,28 +2147,80 @@ function importExcel(evt){
     try{
       var wb=XLSX.read(e.target.result,{type:'array'});
       var imported=0;
+
+      // Fuzzy sheet finder — tries exact, truncated, then keyword matching
+      function findSheet(tab){
+        var meta=TAB_META[tab];if(!meta)return null;
+        var label=meta.label;
+        if(wb.Sheets[label])return wb.Sheets[label];
+        if(wb.Sheets[label.slice(0,31)])return wb.Sheets[label.slice(0,31)];
+        // Strip non-alpha and compare
+        var lc=label.toLowerCase().replace(/[^a-z]/g,'');
+        var found=wb.SheetNames.find(function(sn){
+          var snlc=sn.toLowerCase().replace(/[^a-z]/g,'');
+          return snlc===lc||snlc.indexOf(lc)>=0||lc.indexOf(snlc)>=0;
+        });
+        if(found)return wb.Sheets[found];
+        // Match by tab key (e.g. 'docs','bank','passwords')
+        var key=tab.replace('cat_','').toLowerCase();
+        found=wb.SheetNames.find(function(sn){return sn.toLowerCase().indexOf(key)>=0;});
+        return found?wb.Sheets[found]:null;
+      }
+
+      // Build header→column map so old exports with different column order still work
+      function mapRowByHeaders(headers,row,cols){
+        var rec={};
+        cols.forEach(function(col){
+          var lk=col.k.toLowerCase();
+          var ll=col.l.toLowerCase();
+          var idx=headers.findIndex(function(h){
+            var lh=(h||'').toLowerCase().trim();
+            return lh===ll||lh===lk||lh.replace(/[^a-z]/g,'')===ll.replace(/[^a-z]/g,'');
+          });
+          if(idx>=0&&row[idx]!=null)rec[col.k]=String(row[idx]).trim();
+        });
+        return rec;
+      }
+
       var allTabs=['docs','bank','insurance','passwords','medical','property','vehicles','notes'];
       (DATA.customCategories||[]).forEach(function(cat){allTabs.push('cat_'+cat.id);});
+
       allTabs.forEach(function(tab){
-        var meta=TAB_META[tab];if(!meta)return;
-        var ws=wb.Sheets[meta.label.slice(0,31)];if(!ws)return;
-        var rows=XLSX.utils.sheet_to_json(ws,{header:1});
+        var ws=findSheet(tab);if(!ws)return;
+        var rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
         if(rows.length<2)return;
+        var headers=rows[0].map(function(h){return String(h||'').trim();});
         var cols=getAllCols(tab);
+        var hasHeaders=headers.some(function(h){
+          return cols.some(function(c){return c.l.toLowerCase()===h.toLowerCase()||c.k.toLowerCase()===h.toLowerCase();});
+        });
+        // find name column
+        var nameIdx=headers.findIndex(function(h){return h.toLowerCase()==='name'||h.toLowerCase().indexOf('name')>=0;});
+        if(nameIdx<0)nameIdx=0;
+
         for(var i=1;i<rows.length;i++){
           var row=rows[i];if(!row||!row.length)continue;
-          var rec={id:uid(),name:row[0]||''};
-          cols.filter(function(c){return c.k!=='name';}).forEach(function(col,ci){rec[col.k]=row[ci+1]!=null?String(row[ci+1]):'';});
-          if(!rec.name)continue;
+          var name=String(row[nameIdx]||row[0]||'').trim();
+          if(!name)continue;
+          var rec={id:uid(),name:name};
+          if(hasHeaders){
+            Object.assign(rec,mapRowByHeaders(headers,row,cols));
+          } else {
+            // Positional fallback for very old exports
+            cols.filter(function(c){return c.k!=='name';}).forEach(function(col,ci){
+              if(row[ci+1]!=null)rec[col.k]=String(row[ci+1]).trim();
+            });
+          }
           var exists=(DATA[tab]||[]).some(function(r){return r.name===rec.name&&r.member===rec.member;});
           if(!exists){DATA[tab]=DATA[tab]||[];DATA[tab].push(rec);imported++;}
         }
       });
-      // Re-import Drive Links if present
+
+      // Re-import Drive Links sheet if present
       var dlSheet=wb.Sheets['DriveLinks'];
       var dlImported=0;
       if(dlSheet){
-        var dlRows=XLSX.utils.sheet_to_json(dlSheet,{header:1});
+        var dlRows=XLSX.utils.sheet_to_json(dlSheet,{header:1,defval:''});
         if(!DATA.driveLinks)DATA.driveLinks={};
         for(var di=1;di<dlRows.length;di++){
           var dlRow=dlRows[di];if(!dlRow||!dlRow[0]||!dlRow[1])continue;
@@ -2184,11 +2236,17 @@ function importExcel(evt){
       }
 
       save();renderSidebar();renderTab();
-      var msg=imported+' records imported.';
-      if(dlImported)msg+='\n'+dlImported+' Drive link(s) restored.';
-      if(imported===0&&dlImported===0)msg='No new records found.\n\nMake sure you are importing a FamilyVault Excel export.';
-      alert(msg);
-    }catch(err){alert('Import failed: '+err.message+'\n\nMake sure this is a FamilyVault .xlsx export file.');}
+      if(imported===0&&dlImported===0){
+        alert('No new records found.\n\nSheets in your file: '+wb.SheetNames.join(', ')+'\n\nExpected sheets named like: Documents & IDs, Bank & Finance, Insurance, Passwords & Logins, Medical, Property, Vehicles & Cars, Notes & Other\n\nIf sheet names look different, try re-exporting from the current version first.');
+      } else {
+        var msg='✅ Import complete!\n\n'+imported+' record'+(imported===1?'':'s')+' imported';
+        if(dlImported)msg+='\n'+dlImported+' Drive link'+(dlImported===1?'':'s')+' restored';
+        alert(msg);
+      }
+    }catch(err){
+      alert('Import failed: '+err.message+'\n\nFile must be a FamilyVault .xlsx export.');
+      console.error('importExcel',err);
+    }
   };
   reader.readAsArrayBuffer(file);evt.target.value='';
 }

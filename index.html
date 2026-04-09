@@ -415,7 +415,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   .sidebar{display:none;}
   .main{padding:12px 14px 80px;}
   .top-bar{padding:10px 14px;}
-  .top-actions .tbtn:not(.gold):not(.red){display:none;}
+  .top-actions .tbtn:not(.gold):not(.red):not(.import-btn){display:none;}
   .top-actions{gap:6px;}
   .tbtn{padding:7px 12px;font-size:12px;}
   .mobile-nav{display:grid;}
@@ -648,7 +648,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="top-actions">
       <input type="file" id="import-file" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)"/>
       <input type="file" id="lp-csv-file" accept=".csv" style="display:none" onchange="importLastPassCSV(event)"/>
-      <button class="tbtn" onclick="document.getElementById('import-file').click()">⬆ Import</button>
+      <button class="tbtn import-btn" onclick="document.getElementById('import-file').click()">⬆ Import</button>
       <button class="tbtn" onclick="openScanModal()" style="border-color:var(--blue);color:var(--blue)">📷 Scan Doc</button>
       <button class="tbtn gold" onclick="exportExcel()">⬇ Export Excel</button>
       <button class="tbtn red" onclick="lockVault()">🔒 Lock</button>
@@ -1639,6 +1639,9 @@ function renderSettings(){
         +'</details>'
         +'<div class="fg"><label>GitHub Personal Access Token (gist scope only)</label>'
         +'<input type="password" id="gs-token-inp" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"/>'
+        +'</div>'
+        +'<div class="fg"><label>Gist ID <span style="font-weight:400;color:var(--text3)">(leave blank to create new — or paste existing ID to join)</span></label>'
+        +'<input type="text" id="gs-gistid-inp" placeholder="0ce62064732d85dd5305f6a004b13182 (optional)"/>'
         +'</div>'
         +'<button class="tbtn gold" onclick="gsConnect()">☁ Connect & Sync</button>')
     +'</div>';
@@ -2826,30 +2829,36 @@ function gsSetUI(state,msg){
 }
 
 async function gsConnect(){
-  var token=(document.getElementById('gs-token-inp').value||''). trim();
+  var token=(document.getElementById('gs-token-inp').value||'').trim();
+  var existingId=document.getElementById('gs-gistid-inp')?document.getElementById('gs-gistid-inp').value.trim():'';
   if(!token){alert('Please paste your GitHub token.');return;}
   gsSetUI('busy','Connecting…');
   try{
-    // Verify token works
     var check=await fetch('https://api.github.com/user',{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}});
     if(!check.ok)throw new Error('Invalid token — HTTP '+check.status);
     var user=await check.json();
-
-    // Create private gist
-    var payload={};
-    delete payload.attachments;payload.attachments={};
-    var body=JSON.stringify(DATA);
-    var resp=await fetch('https://api.github.com/gists',{
-      method:'POST',
-      headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
-      body:JSON.stringify({description:'FamilyVault Data',public:false,files:{'familyvault.json':{content:body}}})
-    });
-    if(!resp.ok)throw new Error('Gist create failed — HTTP '+resp.status);
-    var gist=await resp.json();
-    gsSaveConfig({token:token,gistId:gist.id,user:user.login});
-    gsSetUI('ok','✓ synced');
-    alert('✅ Cloud sync connected! Signed in as @'+user.login+'\n\nYour vault syncs automatically.\n\nTo connect another device:\n1. Open vault → Settings → Cloud Sync\n2. Create another GitHub token\n3. Also enter Gist ID: '+gist.id);
-    renderSettings();
+    if(existingId){
+      // Join existing gist
+      var vresp=await fetch('https://api.github.com/gists/'+existingId,{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}});
+      if(!vresp.ok)throw new Error('Gist not found — check the Gist ID');
+      gsSaveConfig({token:token,gistId:existingId,user:user.login});
+      await gsPull();
+      alert('✅ Joined existing sync as @'+user.login+'!\n\nAll your vault data has been loaded.');
+      renderSettings();
+    } else {
+      // Create new gist
+      var resp=await fetch('https://api.github.com/gists',{
+        method:'POST',
+        headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
+        body:JSON.stringify({description:'FamilyVault Data',public:false,files:{'familyvault.json':{content:JSON.stringify(DATA)}}})
+      });
+      if(!resp.ok)throw new Error('Gist create failed — HTTP '+resp.status);
+      var gist=await resp.json();
+      gsSaveConfig({token:token,gistId:gist.id,user:user.login});
+      gsSetUI('ok','✓ synced');
+      alert('✅ Connected as @'+user.login+'!\n\nTo connect other devices:\n1. Go to Settings → Cloud Sync\n2. Enter a new GitHub token\n3. Enter Gist ID: '+gist.id);
+      renderSettings();
+    }
   }catch(e){
     gsSetUI('err','Connection failed');
     alert('Connection failed: '+e.message);

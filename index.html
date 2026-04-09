@@ -2931,9 +2931,24 @@ async function gsPull(){
     var resp=await fetch('https://api.github.com/gists/'+cfg.gistId,{
       headers:{'Authorization':'token '+cfg.token,'Accept':'application/vnd.github.v3+json'}
     });
-    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    if(resp.status===401)throw new Error('Token expired or invalid — reconnect in Settings → Cloud Sync');
+    if(resp.status===404)throw new Error('Gist not found — check Gist ID');
+    if(!resp.ok)throw new Error('GitHub error: HTTP '+resp.status);
     var gist=await resp.json();
-    var raw=gist.files['familyvault.json']&&gist.files['familyvault.json'].content;
+    var fileObj=gist.files&&gist.files['familyvault.json'];
+    if(!fileObj)throw new Error('No vault file found in gist');
+
+    var raw=fileObj.content;
+
+    // GitHub truncates files > 1MB — fetch raw_url for full content
+    if(fileObj.truncated&&fileObj.raw_url){
+      var rawResp=await fetch(fileObj.raw_url,{
+        headers:{'Authorization':'token '+cfg.token}
+      });
+      if(!rawResp.ok)throw new Error('Failed to fetch full content: HTTP '+rawResp.status);
+      raw=await rawResp.text();
+    }
+
     if(raw){
       var cloud=JSON.parse(raw);
       if(cloud&&cloud.docs!==undefined){
@@ -2954,11 +2969,19 @@ async function gsPull(){
         });
         try{localStorage.setItem(VAULT_KEY,JSON.stringify(DATA));}catch(ex){}
         renderSidebar();renderTab();
+      } else {
+        throw new Error('Vault data format invalid');
       }
+    } else {
+      throw new Error('Vault file is empty');
     }
     gsSetUI('ok','✓ synced');
   }catch(e){
-    console.error('gsPull',e);gsSetUI('err','Load failed — using local data');
+    console.error('gsPull',e);
+    gsSetUI('err',e.message||'Load failed');
+    // Show error in sync bar label so user can see the actual problem
+    var label=document.getElementById('sync-label');
+    if(label)label.textContent='Sync error: '+e.message;
   }
 }
 

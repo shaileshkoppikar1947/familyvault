@@ -2806,92 +2806,6 @@ function formatBytes(b) {
   return (b/1048576).toFixed(1) + ' MB';
 }
 
-// ══ GOOGLE DRIVE LINKS ══
-var _gdriveRowId=null;var _gdriveTab=null;
-
-function openGdriveModal(tab,id){
-  _gdriveTab=tab;_gdriveRowId=id;
-  var existing=(DATA.driveLinks&&DATA.driveLinks[id])||{};
-  document.getElementById('gdrive-url-input').value=existing.url||'';
-  document.getElementById('gdrive-label-input').value=existing.label||'';
-  document.getElementById('gdrive-remove-btn').style.display=existing.url?'':'none';
-  updateGdrivePreview(existing.url||'');
-  openModal('gdrive-modal');
-}
-
-function gdriveToPreviewUrl(url){
-  if(!url)return null;
-  // Handle various Drive URL formats
-  var fileId=null;
-  var m=url.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
-  if(m)fileId=m[1];
-  if(!fileId){m=url.match(/id=([a-zA-Z0-9_-]{10,})/);if(m)fileId=m[1];}
-  if(!fileId){m=url.match(/\/file\/d\/([a-zA-Z0-9_-]{10,})/);if(m)fileId=m[1];}
-  if(fileId)return 'https://drive.google.com/file/d/'+fileId+'/preview';
-  // Google Docs/Sheets/Slides
-  var docM=url.match(/docs\.google\.com\/(document|spreadsheets|presentation)\/d\/([a-zA-Z0-9_-]{10,})/);
-  if(docM)return 'https://docs.google.com/'+docM[1]+'/d/'+docM[2]+'/preview';
-  return null;
-}
-
-function onGdriveInput(){
-  var url=document.getElementById('gdrive-url-input').value.trim();
-  updateGdrivePreview(url);
-  var openBtn=document.getElementById('gdrive-open-btn');
-  if(url&&openBtn){openBtn.href=url;openBtn.style.display='';}
-  else if(openBtn){openBtn.style.display='none';}
-}
-
-function updateGdrivePreview(url){
-  var area=document.getElementById('gdrive-preview-area');
-  if(!area)return;
-  var previewUrl=gdriveToPreviewUrl(url);
-  if(previewUrl){
-    area.innerHTML='<div class="gdrive-preview"><iframe src="'+esc(previewUrl)+'" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups"></iframe></div>';
-  } else if(url){
-    area.innerHTML='<div class="gdrive-preview"><div class="gdrive-preview-placeholder">📄 Preview not available for this link type.<br/>The document will open in Google Drive when clicked.</div></div>';
-  } else {
-    area.innerHTML='';
-  }
-}
-
-function saveGdriveLink(){
-  var url=(document.getElementById('gdrive-url-input').value||'').trim();
-  var label=(document.getElementById('gdrive-label-input').value||'').trim();
-  if(!url){alert('Please paste a Google Drive link.');return;}
-  if(!url.includes('google.com')&&!url.includes('drive.google')){
-    if(!confirm('This doesn\'t look like a Google Drive link. Save anyway?'))return;
-  }
-  if(!DATA.driveLinks)DATA.driveLinks={};
-  DATA.driveLinks[_gdriveRowId]={url:url,label:label,savedAt:new Date().toISOString()};
-  save();
-  closeModal('gdrive-modal');
-  // Refresh the row in place
-  var tab=_gdriveTab;var id=_gdriveRowId;
-  var recs=DATA[tab]||[];
-  var r=recs.find(function(x){return x.id===id;});
-  if(r){
-    var cols=getVisibleCols(tab);
-    var row=document.getElementById('row-'+id);
-    if(row){var tmp=document.createElement('table');tmp.innerHTML='<tbody>'+renderRow(r,tab,cols,false)+'</tbody>';var nr=tmp.querySelector('tr');if(nr)row.replaceWith(nr);}
-  }
-}
-
-function removeGdriveLink(){
-  if(!confirm('Remove the Google Drive link from this record?'))return;
-  if(DATA.driveLinks&&DATA.driveLinks[_gdriveRowId])delete DATA.driveLinks[_gdriveRowId];
-  save();
-  closeModal('gdrive-modal');
-  var tab=_gdriveTab;var id=_gdriveRowId;
-  var recs=DATA[tab]||[];
-  var r=recs.find(function(x){return x.id===id;});
-  if(r){
-    var cols=getVisibleCols(tab);
-    var row=document.getElementById('row-'+id);
-    if(row){var tmp=document.createElement('table');tmp.innerHTML='<tbody>'+renderRow(r,tab,cols,false)+'</tbody>';var nr=tmp.querySelector('tr');if(nr)row.replaceWith(nr);}
-  }
-}
-
 function viewAttachment(id) {
   var att = DATA.attachments && DATA.attachments[id];
   if (!att) return;
@@ -3320,11 +3234,15 @@ async function gsPull(){
       if(cloud&&cloud.docs!==undefined){
         // Preserve local attachments (not synced) but take everything else from cloud
         var localAttachments=DATA.attachments||{};
+        // Preserve local driveLinks — merge with cloud (cloud wins on conflict)
+        var localDriveLinks=DATA.driveLinks||{};
         DATA=cloud;
         // Restore local attachments
         DATA.attachments=localAttachments;
-        // Ensure driveLinks always exists
-        if(!DATA.driveLinks)DATA.driveLinks={};
+        // Merge driveLinks: local as base, cloud on top — preserves any local links not yet pushed
+        DATA.driveLinks=Object.assign({},localDriveLinks,cloud.driveLinks||{});
+        // If we had local links the cloud didn't know about, push the merged set back up
+        if(Object.keys(localDriveLinks).length)setTimeout(gsPush,2000);
         // Patch other missing fields
         if(!DATA.members||!DATA.members.length)DATA.members=['Shailesh Koppikar','Anu Kumble','Ria Koppikar','Sunder Koppikar','Nalini Koppikar'];
         if(!DATA.customCategories)DATA.customCategories=[];

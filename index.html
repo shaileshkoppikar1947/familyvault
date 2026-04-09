@@ -651,10 +651,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   <div class="modal detail-modal">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap">
       <h2 id="detail-modal-title" style="margin:0">Record</h2>
-      <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
         <button class="tbtn" onclick="detailEdit()">✏️ Edit</button>
         <button class="tbtn" onclick="detailDrive()" style="border-color:#1a73e8;color:#1a73e8">🔗 Drive</button>
         <button class="tbtn red" onclick="detailDelete()">🗑️ Delete</button>
+        <button onclick="closeModal('detail-modal')" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text3);padding:2px 6px;line-height:1;margin-left:4px" title="Close">✕</button>
       </div>
     </div>
     <div id="detail-modal-body"></div>

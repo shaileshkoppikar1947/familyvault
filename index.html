@@ -1,4 +1,4 @@
-<!-- FILE: index.html | COMMIT #20 | Built: 2026-04-09 | Do not edit manually -->
+<!-- FILE: index.html | COMMIT #21 | Built: 2026-04-09 | Do not edit manually -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -508,7 +508,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         // Populate version badge - reads from APP_VERSION constant defined later
         // We hardcode it here too so it shows before JS fully loads
         var badge=document.getElementById('lock-ver-badge');
-        if(badge)badge.textContent='v13 — index.html #20 — 2026-04-09';
+        if(badge)badge.textContent='v13 — index.html #21 — 2026-04-09';
         // Populate URL/filename
         var el=document.getElementById('lock-url-display');
         if(!el)return;
@@ -819,7 +819,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 // ══ STATE ══
 var VAULT_KEY='fvg_data_v2';
 // ↓↓↓ UPDATE THIS EACH COMMIT ↓↓↓
-var APP_VERSION='v13 — index.html #20 — 2026-04-09';
+var APP_VERSION='v13 — index.html #21 — 2026-04-09';
 // ↑↑↑ UPDATE THIS EACH COMMIT ↑↑↑
 var PW_KEY='fvg_pw_v2';
 var ACTIVE_TAB='docs';
@@ -1321,8 +1321,10 @@ function renderRow(r,tab,cols,isEditing){
     if(_attArr.length>0){
       h+='<button class="icon-btn" title="'+_attArr.length+' attachment'+(_attArr.length>1?'s':'')+' — click to view" onclick="openDetailModal(\''+tab+'\',\''+id+'\')" style="color:var(--blue);font-weight:700">📎'+(_attArr.length>1?_attArr.length:'')+"</button>";
     }
-    var hasDrive = DATA.driveLinks && DATA.driveLinks[id];
-    h+='<button class="icon-btn" title="'+(hasDrive?'View Drive doc':'Link Google Drive')+'" onclick="openGdriveModal(\''+tab+'\',\''+id+'\')" style="color:'+(hasDrive?'#1a73e8':'var(--text3)')+'">🔗</button>';
+    var _dls=DATA.driveLinks&&DATA.driveLinks[id];
+    var _dlArr=_dls?(Array.isArray(_dls)?_dls:[_dls]).filter(function(d){return d&&d.url;}):[];
+    var hasDrive=_dlArr.length>0;
+    h+='<button class="icon-btn" title="'+(hasDrive?_dlArr.length+' Drive link'+(_dlArr.length>1?'s':'')+' — click to manage':'Add Google Drive link')+'" onclick="openDetailModal(\''+tab+'\',\''+id+'\')" style="color:'+(hasDrive?'#1a73e8':'var(--text3)')+'">🔗'+(_dlArr.length>1?'<sup style=\"font-size:8px\">'+_dlArr.length+'</sup>':'')+'</button>';
     h+='<button class="icon-btn" title="Edit" onclick="startRowEdit(\''+tab+'\',\''+id+'\')">✏️</button>';
     h+='<button class="icon-btn del-btn" title="Delete" onclick="askDelete(\''+tab+'\',\''+id+'\')">🗑️</button>';
   }
@@ -3064,16 +3066,28 @@ function openDetailModal(tab,id){
     h+='<div class="detail-field"><div class="detail-key">'+esc(col.l)+'</div><div class="detail-val">'+displayVal+'</div></div>';
   });
   h+='</div>';
-  // Drive link preview
-  var drive=DATA.driveLinks&&DATA.driveLinks[id];
-  if(drive&&drive.url){
-    var previewUrl=gdriveToPreviewUrl(drive.url);
-    h+='<div class="detail-section"><div class="detail-field"><div class="detail-key">Drive Doc</div><div class="detail-val">';
-    h+='<a href="'+esc(drive.url)+'" target="_blank" class="detail-drive-btn">↗ Open in Drive'+(drive.label?' — '+esc(drive.label):'')+'</a>';
-    h+='</div></div>';
-    if(previewUrl)h+='<div style="padding:8px"><iframe src="'+esc(previewUrl)+'" style="width:100%;height:260px;border:none;border-radius:4px" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups"></iframe></div>';
+  // Drive links - supports multiple
+  var _drives=DATA.driveLinks&&DATA.driveLinks[id];
+  var _driveArr=_drives?(Array.isArray(_drives)?_drives:[_drives]).filter(function(d){return d&&d.url;}):[];
+  h+='<div class="detail-section">';
+  h+='<div class="detail-field"><div class="detail-key">🔗 Drive Links</div><div class="detail-val">';
+  h+='<button class="tbtn" onclick="openAddDriveLinkModal(\''+id+'\',\''+tab+'\')" style="border-color:#1a73e8;color:#1a73e8;font-size:12px">+ Add Drive Link</button>';
+  h+='</div></div>';
+  if(_driveArr.length>0){
+    h+='<div style="display:flex;flex-direction:column;gap:6px;padding:4px 0 4px">';
+    _driveArr.forEach(function(dl,di){
+      h+='<div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:var(--r);padding:7px 10px">';
+      h+='<span style="font-size:16px">📄</span>';
+      h+='<span style="flex:1;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(dl.label||'Drive Doc '+(di+1))+'</span>';
+      h+='<a href="'+esc(dl.url)+'" target="_blank" class="tbtn" style="font-size:11px;padding:4px 10px;border-color:#1a73e8;color:#1a73e8;text-decoration:none;white-space:nowrap">↗ Open</a>';
+      h+='<button class="icon-btn del-btn" onclick="deleteDriveLink(\''+id+'\','+di+',\''+tab+'\')">Del</button>';
+      h+='</div>';
+    });
     h+='</div>';
+  } else {
+    h+='<div style="font-size:12px;color:var(--text3);padding:4px 0 8px">No Drive links yet.</div>';
   }
+  h+='</div>';
   // Attachments - supports multiple
   var _dAtts=DATA.attachments&&DATA.attachments[id];
   var _dAttArr=_dAtts?(Array.isArray(_dAtts)?_dAtts:[_dAtts]).filter(function(a){return a&&a.data;}):[];
@@ -3117,14 +3131,17 @@ function detailDelete(){closeModal('detail-modal');if(_detailTab&&_detailId)askD
 var _gdriveRowId=null,_gdriveTab=null;
 
 function openGdriveModal(tab,id){
+  // Legacy: open via detail modal now
+  openDetailModal(tab,id);
+}
+function openAddDriveLinkModal(id,tab){
   _gdriveTab=tab;_gdriveRowId=id;
-  var existing=(DATA.driveLinks&&DATA.driveLinks[id])||{};
-  document.getElementById('gdrive-url-input').value=existing.url||'';
-  document.getElementById('gdrive-label-input').value=existing.label||'';
-  document.getElementById('gdrive-remove-btn').style.display=existing.url?'':'none';
+  document.getElementById('gdrive-url-input').value='';
+  document.getElementById('gdrive-label-input').value='';
+  document.getElementById('gdrive-remove-btn').style.display='none';
   var openBtn=document.getElementById('gdrive-open-btn');
-  if(openBtn){openBtn.href=existing.url||'#';openBtn.style.display=existing.url?'':'none';}
-  updateGdrivePreview(existing.url||'');
+  if(openBtn){openBtn.href='#';openBtn.style.display='none';}
+  updateGdrivePreview('');
   openModal('gdrive-modal');
 }
 
@@ -3161,20 +3178,33 @@ function saveGdriveLink(){
   var label=(document.getElementById('gdrive-label-input').value||'').trim();
   if(!url){alert('Please paste a Google Drive link.');return;}
   if(!DATA.driveLinks)DATA.driveLinks={};
-  DATA.driveLinks[_gdriveRowId]={url:url,label:label,savedAt:new Date().toISOString()};
+  // Support multiple links as array
+  var existing=DATA.driveLinks[_gdriveRowId];
+  var arr=existing?(Array.isArray(existing)?existing:[existing]).filter(function(d){return d&&d.url;}):[];
+  arr.push({url:url,label:label,savedAt:new Date().toISOString()});
+  DATA.driveLinks[_gdriveRowId]=arr;
   save();closeModal('gdrive-modal');
   var tab=_gdriveTab,id=_gdriveRowId;
-  var recs=DATA[tab]||[];var r=recs.find(function(x){return x.id===id;});
-  if(r){var cols=getVisibleCols(tab);var row=document.getElementById('row-'+id);if(row){var tmp=document.createElement('table');tmp.innerHTML='<tbody>'+renderRow(r,tab,cols,false)+'</tbody>';var nr=tmp.querySelector('tr');if(nr)row.replaceWith(nr);}}
+  openDetailModal(tab,id);
 }
 
 function removeGdriveLink(){
-  if(!confirm('Remove Google Drive link?'))return;
+  // Not used directly anymore - use deleteDriveLink
+  if(!confirm('Remove this Drive link?'))return;
   if(DATA.driveLinks&&DATA.driveLinks[_gdriveRowId])delete DATA.driveLinks[_gdriveRowId];
   save();closeModal('gdrive-modal');
-  var tab=_gdriveTab,id=_gdriveRowId;
-  var recs=DATA[tab]||[];var r=recs.find(function(x){return x.id===id;});
-  if(r){var cols=getVisibleCols(tab);var row=document.getElementById('row-'+id);if(row){var tmp=document.createElement('table');tmp.innerHTML='<tbody>'+renderRow(r,tab,cols,false)+'</tbody>';var nr=tmp.querySelector('tr');if(nr)row.replaceWith(nr);}}
+  openDetailModal(_gdriveTab,_gdriveRowId);
+}
+function deleteDriveLink(id,idx,tab){
+  if(!confirm('Remove this Drive link?'))return;
+  var arr=DATA.driveLinks&&DATA.driveLinks[id];
+  if(!arr)return;
+  arr=Array.isArray(arr)?arr:[arr];
+  arr.splice(idx,1);
+  if(arr.length===0){delete DATA.driveLinks[id];}
+  else{DATA.driveLinks[id]=arr;}
+  save();
+  openDetailModal(tab||_gdriveTab,id);
 }
 
 if(!DATA.driveLinks)DATA.driveLinks={};

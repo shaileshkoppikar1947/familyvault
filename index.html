@@ -1,4 +1,4 @@
-<!-- FILE: index.html | COMMIT #21 | Built: 2026-04-09 | Do not edit manually -->
+<!-- FILE: index.html | COMMIT #22 | Built: 2026-04-09 | Do not edit manually -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -508,7 +508,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         // Populate version badge - reads from APP_VERSION constant defined later
         // We hardcode it here too so it shows before JS fully loads
         var badge=document.getElementById('lock-ver-badge');
-        if(badge)badge.textContent='v13 — index.html #21 — 2026-04-09';
+        if(badge)badge.textContent='v13 — index.html #22 — 2026-04-09';
         // Populate URL/filename
         var el=document.getElementById('lock-url-display');
         if(!el)return;
@@ -819,7 +819,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 // ══ STATE ══
 var VAULT_KEY='fvg_data_v2';
 // ↓↓↓ UPDATE THIS EACH COMMIT ↓↓↓
-var APP_VERSION='v13 — index.html #21 — 2026-04-09';
+var APP_VERSION='v13 — index.html #22 — 2026-04-09';
 // ↑↑↑ UPDATE THIS EACH COMMIT ↑↑↑
 var PW_KEY='fvg_pw_v2';
 var ACTIVE_TAB='docs';
@@ -1890,6 +1890,34 @@ function renderSettings(){
     +'<h3 style="color:var(--red)">⚠ Danger Zone</h3>'
     +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px">Clear all vault data. Export first.</p>'
     +'<button class="tbtn red" onclick="clearAll()">Clear All Data</button></div>';
+  // Drive Links card
+  var _dlCount=Object.keys(DATA.driveLinks||{}).length;
+  var _allT2=['docs','bank','insurance','passwords','medical','property','vehicles','notes'];
+  (DATA.customCategories||[]).forEach(function(cat){_allT2.push('cat_'+cat.id);});
+  h+='<div class="settings-card" style="border-color:rgba(30,95,166,0.3)">'
+    +'<h3>🔗 Google Drive Links</h3>'
+    +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7">You have <strong>'+_dlCount+' Drive link'+(_dlCount===1?'':'s')+'</strong> saved across your records. Back them up so they are never lost.</p>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'
+    +'<button class="tbtn" onclick="exportDriveLinksJSON()" style="border-color:var(--blue);color:var(--blue)">⬇ Backup Links (JSON)</button>'
+    +'<label class="tbtn" style="cursor:pointer;border-color:var(--green);color:var(--green)">⬆ Restore Links (JSON)<input type="file" accept=".json" style="display:none" onchange="importDriveLinksJSON(event)"/></label>'
+    +'</div>'
+    +(_dlCount>0
+      ?'<div style="display:flex;flex-direction:column;gap:5px">'
+        +Object.entries(DATA.driveLinks||{}).map(function(e){
+            var id=e[0],dls=e[1];
+            var arr=Array.isArray(dls)?dls:[dls];
+            var name='';
+            _allT2.forEach(function(t){var r=(DATA[t]||[]).find(function(x){return x.id===id;});if(r&&r.name)name=r.name;});
+            return arr.map(function(dl){
+              return '<div style="background:var(--surface2);border-radius:var(--r);padding:7px 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+                +'<span style="font-size:12px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(name||id)+(dl.label?' — '+esc(dl.label):'')+'</span>'
+                +'<a href="'+esc(dl.url)+'" target="_blank" class="tbtn" style="font-size:11px;padding:4px 10px;border-color:var(--blue);color:var(--blue);text-decoration:none">↗ Open</a>'
+                +'</div>';
+            }).join('');
+          }).join('')
+        +'</div>'
+      :'<div style="font-size:12px;color:var(--text3)">No Drive links saved yet. Open any record and use + Add Drive Link.</div>')
+    +'</div>';
   document.getElementById('main-content').innerHTML=h;
   renderMemberList();
 }
@@ -3261,6 +3289,48 @@ function openShareModal(){
     +'</div></div>'
     +'<div style="background:var(--amber-l);border:1px solid rgba(196,122,26,0.3);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--amber);margin-top:12px">⚠ Keep private — only share with trusted family members. Never send via email.</div>';
   openModal('share-modal');
+}
+
+// == DRIVE LINKS BACKUP / RESTORE ==
+function exportDriveLinksJSON(){
+  var links=DATA.driveLinks||{};
+  if(!Object.keys(links).length){alert('No Drive links to export.');return;}
+  var out={exported:new Date().toISOString(),links:{}};
+  var allT=['docs','bank','insurance','passwords','medical','property','vehicles','notes'];
+  (DATA.customCategories||[]).forEach(function(cat){allT.push('cat_'+cat.id);});
+  Object.keys(links).forEach(function(id){
+    var dls=links[id];var arr=Array.isArray(dls)?dls:[dls];
+    var name='';allT.forEach(function(t){var r=(DATA[t]||[]).find(function(x){return x.id===id;});if(r&&r.name)name=r.name;});
+    out.links[id]=arr.map(function(dl){return Object.assign({},dl,{recordName:name});});
+  });
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(out,null,2)],{type:'application/json'}));
+  a.download='FamilyVault_DriveLinks_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+function importDriveLinksJSON(evt){
+  var file=evt.target.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      var links=data.links||data;
+      if(!DATA.driveLinks)DATA.driveLinks={};
+      var restored=0,skipped=0;
+      Object.keys(links).forEach(function(id){
+        var dls=links[id];
+        if(!dls)return;
+        var arr=Array.isArray(dls)?dls:[dls];
+        arr=arr.filter(function(d){return d&&d.url;});
+        if(!arr.length)return;
+        if(DATA.driveLinks[id]){skipped++;return;}
+        DATA.driveLinks[id]=arr;restored++;
+      });
+      save();renderSettings();
+      alert(restored+' record Drive link(s) restored.'+(skipped?' ('+skipped+' skipped — already exist)':''));
+    }catch(err){alert('Restore failed: '+err.message);}
+  };
+  reader.readAsText(file);evt.target.value='';
 }
 
 // ══ GITHUB GIST SYNC ══

@@ -1613,34 +1613,34 @@ function renderSettings(){
     +'<div class="fg"><label>Confirm</label><input type="password" id="chpw2" placeholder="Confirm"/></div>'
     +'</div><button class="tbtn gold" onclick="changePw()">Update Password</button></div>';
 
-  // JSONBin sync card
-  var jbCfg=jbGetConfig();
-  var jbConnected=!!(jbCfg.key&&jbCfg.binId);
-  var jbHasKey=!!jbCfg.key;
+  // GitHub Gist sync card
+  var gsCfg=gsGetConfig();
+  var gsConnected=!!(gsCfg.token&&gsCfg.gistId);
   h+='<div class="settings-card" style="border-color:rgba(26,122,74,0.3)">'
-    +'<h3>☁ Cloud Sync (JSONBin)</h3>'
+    +'<h3>☁ Cloud Sync (GitHub)</h3>'
     +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7">'
-    +'Sync your vault across all devices — phone, tablet, computer. Uses <a href="https://jsonbin.io" target="_blank" style="color:var(--gold)">JSONBin.io</a> (free, no credit card). Data is still password-protected.'
+    +'Sync across all devices using your free GitHub account. Data saved as a private Gist — still password-protected.'
     +'</p>'
-    +(jbConnected
+    +(gsConnected
       ?'<div style="background:var(--green-l);border:1px solid rgba(26,122,74,0.2);border-radius:var(--r);padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--green)">✅ Connected — syncing automatically</div>'
         +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
-        +'<button class="tbtn" onclick="jbSyncNow()" style="border-color:var(--green);color:var(--green)">↻ Sync Now</button>'
-        +'<button class="tbtn red" onclick="jbDisconnect()">Disconnect</button>'
+        +'<button class="tbtn" onclick="gsSyncNow()" style="border-color:var(--green);color:var(--green)">↻ Sync Now</button>'
+        +'<button class="tbtn red" onclick="gsDisconnect()">Disconnect</button>'
         +'</div>'
       :'<details style="font-size:12px;color:var(--text2);margin-bottom:12px">'
         +'<summary style="cursor:pointer;font-weight:600;color:var(--text);margin-bottom:6px">Setup steps (2 minutes, free)</summary>'
         +'<ol style="padding-left:18px;line-height:2.2;margin-top:6px">'
-        +'<li>Go to <a href="https://jsonbin.io" target="_blank" style="color:var(--gold)">jsonbin.io</a> → Sign up free</li>'
-        +'<li>Go to <strong>API Keys</strong> → copy your <strong>X-Master-Key</strong></li>'
-        +'<li>Paste it below → click Connect</li>'
-        +'<li>Done! Syncs automatically across all devices</li>'
+        +'<li>Go to <a href="https://github.com/settings/tokens/new" target="_blank" style="color:var(--gold)">github.com/settings/tokens/new</a></li>'
+        +'<li>Name it "FamilyVault" — set <strong>No expiration</strong></li>'
+        +'<li>Under Scopes tick only <strong>gist</strong></li>'
+        +'<li>Click <strong>Generate token</strong> → copy it</li>'
+        +'<li>Paste below → click Connect</li>'
         +'</ol>'
         +'</details>'
-        +'<div class="fg"><label>JSONBin Master Key (X-Master-Key)</label>'
-        +'<input type="password" id="jb-key-inp" placeholder="Paste your Master Key here…"/>'
+        +'<div class="fg"><label>GitHub Personal Access Token (gist scope only)</label>'
+        +'<input type="password" id="gs-token-inp" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"/>'
         +'</div>'
-        +'<button class="tbtn gold" onclick="jbConnect()">☁ Connect & Sync</button>')
+        +'<button class="tbtn gold" onclick="gsConnect()">☁ Connect & Sync</button>')
     +'</div>';
     +'<h3 style="color:var(--red)">⚠ Danger Zone</h3>'
     +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px">Clear all vault data. Export first.</p>'
@@ -2802,19 +2802,14 @@ document.addEventListener('click',function(e){
   if(cm&&!cm.contains(e.target))cm.classList.remove('open');
 });
 
-// ══ JSONBIN SYNC ══
-var JB_CFG_KEY='fvg_jb_cfg_v1';
-var _jbSaving=false;
-var _jbDirty=false;
+// ══ GITHUB GIST SYNC ══
+var GS_CFG_KEY='fvg_gs_cfg_v1';
+var _gsSaving=false;var _gsDirty=false;
 
-function jbGetConfig(){
-  try{return JSON.parse(localStorage.getItem(JB_CFG_KEY)||'{}');}catch(e){return {};}
-}
-function jbSaveConfig(obj){
-  localStorage.setItem(JB_CFG_KEY,JSON.stringify(obj));
-}
+function gsGetConfig(){try{return JSON.parse(localStorage.getItem(GS_CFG_KEY)||'{}')}catch(e){return {};}}
+function gsSaveConfig(o){localStorage.setItem(GS_CFG_KEY,JSON.stringify(o));}
 
-function jbSetUI(state,msg){
+function gsSetUI(state,msg){
   var bar=document.getElementById('sync-bar');
   var dot=document.getElementById('sync-dot');
   var label=document.getElementById('sync-label');
@@ -2824,148 +2819,125 @@ function jbSetUI(state,msg){
   if(!bar)return;
   bar.style.display='flex';
   dot.className='sync-dot'+(state==='ok'?' ok':state==='busy'?' busy':state==='err'?' err':'');
-  label.textContent=msg||'Cloud sync';
+  if(label)label.textContent='GitHub Sync: '+msg;
   if(nowBtn)nowBtn.style.display=(state==='ok'||state==='err')?'':'none';
   if(discBtn)discBtn.style.display=(state==='ok'||state==='err')?'':'none';
-  if(timeEl&&state==='ok'){
-    var t=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-    timeEl.textContent='Last sync: '+t;
-  }
+  if(timeEl&&state==='ok'){var t=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});timeEl.textContent='Last sync: '+t;}
 }
 
-// Connect: create a new bin with current data
-async function jbConnect(){
-  var key=(document.getElementById('jb-key-inp').value||'').trim();
-  if(!key){alert('Please paste your Access Key.');return;}
-  jbSetUI('busy','Connecting…');
+async function gsConnect(){
+  var token=(document.getElementById('gs-token-inp').value||''). trim();
+  if(!token){alert('Please paste your GitHub token.');return;}
+  gsSetUI('busy','Connecting…');
   try{
-    // Strip attachments to save space (they can be huge base64)
-    var payload=JSON.parse(JSON.stringify(DATA));
-    delete payload.attachments;
-    payload.attachments={};
+    // Verify token works
+    var check=await fetch('https://api.github.com/user',{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}});
+    if(!check.ok)throw new Error('Invalid token — HTTP '+check.status);
+    var user=await check.json();
 
-    var resp=await fetch('https://api.jsonbin.io/v3/b',{
+    // Create private gist
+    var payload={};
+    delete payload.attachments;payload.attachments={};
+    var body=JSON.stringify(DATA);
+    var resp=await fetch('https://api.github.com/gists',{
       method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'X-Master-Key':key,
-        'X-Bin-Name':'FamilyVault',
-        'X-Bin-Private':'true'
-      },
-      body:JSON.stringify(payload)
+      headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
+      body:JSON.stringify({description:'FamilyVault Data',public:false,files:{'familyvault.json':{content:body}}})
     });
-    if(!resp.ok)throw new Error('HTTP '+resp.status+' — check your Access Key');
-    var data=await resp.json();
-    var binId=data.metadata.id;
-    jbSaveConfig({key:key,binId:binId});
-    jbSetUI('ok','☁ Connected');
-    alert('✅ Cloud sync connected!\n\nYour vault is now synced to JSONBin.\n\nOn any other device:\n1. Open the vault\n2. Go to Settings → Cloud Sync\n3. Paste the same Access Key\n4. Also paste Bin ID: '+binId+'\n\nSave that Bin ID somewhere safe!');
+    if(!resp.ok)throw new Error('Gist create failed — HTTP '+resp.status);
+    var gist=await resp.json();
+    gsSaveConfig({token:token,gistId:gist.id,user:user.login});
+    gsSetUI('ok','✓ synced');
+    alert('✅ Cloud sync connected! Signed in as @'+user.login+'\n\nYour vault syncs automatically.\n\nTo connect another device:\n1. Open vault → Settings → Cloud Sync\n2. Create another GitHub token\n3. Also enter Gist ID: '+gist.id);
     renderSettings();
   }catch(e){
-    jbSetUI('err','Connection failed');
-    alert('Connection failed: '+e.message+'\n\nMake sure you used the X-Master-Key from jsonbin.io → API Keys.');
+    gsSetUI('err','Connection failed');
+    alert('Connection failed: '+e.message);
   }
 }
 
-// Save current DATA to JSONBin
-async function jbPush(){
-  var cfg=jbGetConfig();
-  if(!cfg.key||!cfg.binId)return;
-  if(_jbSaving){_jbDirty=true;return;}
-  _jbSaving=true;
-  jbSetUI('busy','Saving…');
+async function gsPush(){
+  var cfg=gsGetConfig();if(!cfg.token||!cfg.gistId)return;
+  if(_gsSaving){_gsDirty=true;return;}
+  _gsSaving=true;gsSetUI('busy','Saving…');
   try{
-    // Don't sync huge attachments — they eat quota fast
     var payload=JSON.parse(JSON.stringify(DATA));
-    delete payload.attachments;
-    payload.attachments={};
-
-    var resp=await fetch('https://api.jsonbin.io/v3/b/'+cfg.binId,{
-      method:'PUT',
-      headers:{
-        'Content-Type':'application/json',
-        'X-Master-Key':cfg.key
-      },
-      body:JSON.stringify(payload)
+    delete payload.attachments;payload.attachments={};
+    var resp=await fetch('https://api.github.com/gists/'+cfg.gistId,{
+      method:'PATCH',
+      headers:{'Authorization':'token '+cfg.token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
+      body:JSON.stringify({files:{'familyvault.json':{content:JSON.stringify(payload)}}})
     });
     if(!resp.ok)throw new Error('HTTP '+resp.status);
-    jbSetUI('ok','☁ Synced');
+    gsSetUI('ok','✓ synced');
   }catch(e){
-    console.error('jbPush error',e);
-    jbSetUI('err','Sync failed — will retry');
-    setTimeout(jbPush,15000);
+    console.error('gsPush',e);gsSetUI('err','Save failed — retrying');
+    setTimeout(gsPush,15000);
   }finally{
-    _jbSaving=false;
-    if(_jbDirty){_jbDirty=false;jbPush();}
+    _gsSaving=false;if(_gsDirty){_gsDirty=false;gsPush();}
   }
 }
 
-// Load DATA from JSONBin (on app open)
-async function jbPull(){
-  var cfg=jbGetConfig();
-  if(!cfg.key||!cfg.binId)return;
-  jbSetUI('busy','Loading from cloud…');
+async function gsPull(){
+  var cfg=gsGetConfig();if(!cfg.token||!cfg.gistId)return;
+  gsSetUI('busy','Loading from cloud…');
   try{
-    var resp=await fetch('https://api.jsonbin.io/v3/b/'+cfg.binId+'/latest',{
-      headers:{'X-Master-Key':cfg.key}
+    var resp=await fetch('https://api.github.com/gists/'+cfg.gistId,{
+      headers:{'Authorization':'token '+cfg.token,'Accept':'application/vnd.github.v3+json'}
     });
     if(!resp.ok)throw new Error('HTTP '+resp.status);
-    var result=await resp.json();
-    var cloud=result.record;
-    if(cloud&&cloud.docs!==undefined){
-      // Cloud wins — it's the source of truth across devices
-      DATA=cloud;
-      if(!DATA.members||!DATA.members.length)DATA.members=['Shailesh Koppikar','Anu Kumble','Ria Koppikar','Sunder Koppikar','Nalini Koppikar'];
-      if(!DATA.customCategories)DATA.customCategories=[];
-      if(!DATA.hiddenCols)DATA.hiddenCols={};
-      if(!DATA.customCols)DATA.customCols={};
-      if(!DATA.customScanTypes)DATA.customScanTypes={};
-      if(!DATA.attachments)DATA.attachments={};
-      if(!DATA.driveLinks)DATA.driveLinks={};
-      ['docs','bank','insurance','passwords','medical','property','vehicles','notes'].forEach(function(t){if(!DATA[t])DATA[t]=[];});
-      (DATA.customCategories||[]).forEach(function(cat){
-        var tk='cat_'+cat.id;
-        if(!TAB_META[tk])TAB_META[tk]={label:cat.name,icon:cat.icon,nameLabel:cat.name+' Name'};
-        if(!DATA[tk])DATA[tk]=[];
-        if(!SCHEMAS[tk])SCHEMAS[tk]=[{k:'member',l:'Person',type:'member'},{k:'notes',l:'Notes',type:'text'}];
-      });
-      // Cache locally
-      try{localStorage.setItem(VAULT_KEY,JSON.stringify(DATA));}catch(ex){}
-      renderSidebar();renderTab();
+    var gist=await resp.json();
+    var raw=gist.files['familyvault.json']&&gist.files['familyvault.json'].content;
+    if(raw){
+      var cloud=JSON.parse(raw);
+      if(cloud&&cloud.docs!==undefined){
+        DATA=cloud;
+        if(!DATA.members||!DATA.members.length)DATA.members=['Shailesh Koppikar','Anu Kumble','Ria Koppikar','Sunder Koppikar','Nalini Koppikar'];
+        if(!DATA.customCategories)DATA.customCategories=[];
+        if(!DATA.hiddenCols)DATA.hiddenCols={};
+        if(!DATA.customCols)DATA.customCols={};
+        if(!DATA.customScanTypes)DATA.customScanTypes={};
+        if(!DATA.attachments)DATA.attachments={};
+        if(!DATA.driveLinks)DATA.driveLinks={};
+        ['docs','bank','insurance','passwords','medical','property','vehicles','notes'].forEach(function(t){if(!DATA[t])DATA[t]=[];});
+        (DATA.customCategories||[]).forEach(function(cat){
+          var tk='cat_'+cat.id;
+          if(!TAB_META[tk])TAB_META[tk]={label:cat.name,icon:cat.icon,nameLabel:cat.name+' Name'};
+          if(!DATA[tk])DATA[tk]=[];
+          if(!SCHEMAS[tk])SCHEMAS[tk]=[{k:'member',l:'Person',type:'member'},{k:'notes',l:'Notes',type:'text'}];
+        });
+        try{localStorage.setItem(VAULT_KEY,JSON.stringify(DATA));}catch(ex){}
+        renderSidebar();renderTab();
+      }
     }
-    jbSetUI('ok','☁ Synced');
+    gsSetUI('ok','✓ synced');
   }catch(e){
-    console.error('jbPull error',e);
-    jbSetUI('err','Load failed — using local data');
+    console.error('gsPull',e);gsSetUI('err','Load failed — using local data');
   }
 }
 
-function jbSyncNow(){jbPull();}
-
-function jbDisconnect(){
-  if(!confirm('Disconnect cloud sync?\n\nYour local data stays safe. You can reconnect anytime.'))return;
-  jbSaveConfig({});
-  var bar=document.getElementById('sync-bar');
-  if(bar)bar.style.display='none';
+function gsSyncNow(){gsPull();}
+function gsDisconnect(){
+  if(!confirm('Disconnect cloud sync?\n\nLocal data stays safe.'))return;
+  gsSaveConfig({});
+  var bar=document.getElementById('sync-bar');if(bar)bar.style.display='none';
   renderSettings();
 }
 
-// Patch save() to also push to JSONBin
 var _origSave=save;
 save=function(){
   _origSave();
-  var cfg=jbGetConfig();
-  if(cfg.key&&cfg.binId)jbPush();
+  var cfg=gsGetConfig();
+  if(cfg.token&&cfg.gistId)gsPush();
 };
 
-// Auto-init on app load
 var _origShowApp=showApp;
 showApp=function(){
   _origShowApp();
-  var cfg=jbGetConfig();
-  if(cfg.key&&cfg.binId){
-    jbSetUI('busy','Loading from cloud…');
-    jbPull();
+  var cfg=gsGetConfig();
+  if(cfg.token&&cfg.gistId){
+    gsSetUI('busy','Loading from cloud…');
+    gsPull();
   }
 };
 </script>

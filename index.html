@@ -1,4 +1,4 @@
-<!-- FILE: index.html | COMMIT #31 | Built: 2026-04-09 | Do not edit manually -->
+<!-- FILE: index.html | COMMIT #32 | Built: 2026-04-09 | Do not edit manually -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,7 +19,7 @@ if('serviceWorker' in navigator){
   // Clear all old caches except current version
   caches.keys().then(function(keys){
     keys.forEach(function(key){
-      if(key!=='fv-v14'){caches.delete(key);console.log('Cleared cache:',key);}
+      if(key!=='fv-v15'){caches.delete(key);console.log('Cleared cache:',key);}
     });
   });
 }
@@ -508,7 +508,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         // Populate version badge - reads from APP_VERSION constant defined later
         // We hardcode it here too so it shows before JS fully loads
         var badge=document.getElementById('lock-ver-badge');
-        if(badge)badge.textContent='v13 — index.html #31 — 2026-04-09';
+        if(badge)badge.textContent='v13 — index.html #32 — 2026-04-09';
         // Populate URL/filename
         var el=document.getElementById('lock-url-display');
         if(!el)return;
@@ -821,7 +821,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 // ══ STATE ══
 var VAULT_KEY='fvg_data_v2';
 // ↓↓↓ UPDATE THIS EACH COMMIT ↓↓↓
-var APP_VERSION='v13 — index.html #31 — 2026-04-09';
+var APP_VERSION='v13 — index.html #32 — 2026-04-09';
 // ↑↑↑ UPDATE THIS EACH COMMIT ↑↑↑
 var PW_KEY='fvg_pw_v2';
 var ACTIVE_TAB='docs';
@@ -3025,7 +3025,7 @@ function updateMobileNav() {
   // Rebuild nav HTML
   nav.innerHTML = tabs.map(function(t){
     var active = ACTIVE_TAB===t.tab?' active':'';
-    return '<button class="mnav-btn'+active+'" onclick="mobileNavTab(\'+t.tab+'\')" id="mn-'+t.tab+'">'
+    return '<button class="mnav-btn'+active+'" onclick="mobileNavTab(&#39;'+t.tab+'&#39;)" id="mn-'+t.tab+'">'
       +'<span class="mico">'+t.ico+'</span><span>'+t.label+'</span>'
       +'</button>';
   }).join('');
@@ -3701,7 +3701,7 @@ showApp=function(){
   // Service worker: only register when served from http/https (not file://)
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     var swScript = `
-var CACHE="fv-v14";
+var CACHE="fv-v15";
 self.addEventListener("install",function(e){self.skipWaiting();});
 self.addEventListener("activate",function(e){
   e.waitUntil(caches.keys().then(function(keys){

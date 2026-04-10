@@ -1,4 +1,4 @@
-<!-- FILE: index.html | COMMIT #32 | Built: 2026-04-09 | Do not edit manually -->
+<!-- FILE: index.html | COMMIT #33 | Built: 2026-04-09 | Do not edit manually -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,7 +19,7 @@ if('serviceWorker' in navigator){
   // Clear all old caches except current version
   caches.keys().then(function(keys){
     keys.forEach(function(key){
-      if(key!=='fv-v15'){caches.delete(key);console.log('Cleared cache:',key);}
+      if(key!=='fv-v16'){caches.delete(key);console.log('Cleared cache:',key);}
     });
   });
 }
@@ -318,11 +318,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .mnav-btn.active{color:var(--gold);}
 .mnav-btn .mico{font-size:20px;line-height:1;}
 .mnav-scan-fab{
-  position:fixed;bottom:70px;right:16px;z-index:299;
-  width:52px;height:52px;border-radius:50%;
+  position:fixed;bottom:80px;right:16px;z-index:599;
+  width:56px;height:56px;border-radius:50%;
   background:var(--blue);color:#fff;border:none;
-  font-size:22px;cursor:pointer;display:none;
-  box-shadow:0 4px 16px rgba(30,95,166,0.35);
+  font-size:24px;cursor:pointer;display:none;
+  box-shadow:0 4px 20px rgba(30,95,166,0.45);
   align-items:center;justify-content:center;
   transition:transform 0.15s;
 }
@@ -508,7 +508,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         // Populate version badge - reads from APP_VERSION constant defined later
         // We hardcode it here too so it shows before JS fully loads
         var badge=document.getElementById('lock-ver-badge');
-        if(badge)badge.textContent='v13 — index.html #32 — 2026-04-09';
+        if(badge)badge.textContent='v13 — index.html #33 — 2026-04-09';
         // Populate URL/filename
         var el=document.getElementById('lock-url-display');
         if(!el)return;
@@ -821,7 +821,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 // ══ STATE ══
 var VAULT_KEY='fvg_data_v2';
 // ↓↓↓ UPDATE THIS EACH COMMIT ↓↓↓
-var APP_VERSION='v13 — index.html #32 — 2026-04-09';
+var APP_VERSION='v13 — index.html #33 — 2026-04-09';
 // ↑↑↑ UPDATE THIS EACH COMMIT ↑↑↑
 var PW_KEY='fvg_pw_v2';
 var ACTIVE_TAB='docs';
@@ -2999,6 +2999,7 @@ function deleteAttachment(id,idx,tab){
 
 // ══ MOBILE NAV ══
 function mobileNavTab(tab) {
+  if(tab==='__scan__'){openScanModal();return;}
   setTab(tab, null);
   document.querySelectorAll('.mnav-btn').forEach(function(b) { b.classList.remove('active'); });
   var btn = document.getElementById('mn-'+tab);
@@ -3020,7 +3021,8 @@ function updateMobileNav() {
   (DATA.customCategories||[]).forEach(function(cat){
     tabs.push({tab:'cat_'+cat.id, ico:cat.icon||'📁', label:cat.name.slice(0,8)});
   });
-  // Always end with settings
+  // Always end with scan + settings
+  tabs.push({tab:'__scan__', ico:'📷', label:'Scan'});
   tabs.push({tab:'settings', ico:'⚙️', label:'Settings'});
   // Rebuild nav HTML
   nav.innerHTML = tabs.map(function(t){
@@ -3701,7 +3703,7 @@ showApp=function(){
   // Service worker: only register when served from http/https (not file://)
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     var swScript = `
-var CACHE="fv-v15";
+var CACHE="fv-v16";
 self.addEventListener("install",function(e){self.skipWaiting();});
 self.addEventListener("activate",function(e){
   e.waitUntil(caches.keys().then(function(keys){

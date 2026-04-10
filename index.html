@@ -1,4 +1,4 @@
-<!-- FILE: index.html | COMMIT #34 | Built: 2026-04-09 | Do not edit manually -->
+<!-- FILE: index.html | COMMIT #35 | Built: 2026-04-09 | Do not edit manually -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,7 +19,7 @@ if('serviceWorker' in navigator){
   // Clear all old caches except current version
   caches.keys().then(function(keys){
     keys.forEach(function(key){
-      if(key!=='fv-v17'){caches.delete(key);console.log('Cleared cache:',key);}
+      if(key!=='fv-v18'){caches.delete(key);console.log('Cleared cache:',key);}
     });
   });
 }
@@ -306,20 +306,19 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .mobile-nav{
   display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;
   background:var(--surface);border-top:1px solid var(--border);
-  display:none;
-  flex-direction:row;
-  overflow-x:auto;
+  padding:4px 0 max(4px,env(safe-area-inset-bottom));
+  overflow-x:auto;overflow-y:hidden;
   -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
-  padding:6px 0 max(6px,env(safe-area-inset-bottom));
+  white-space:nowrap;
 }
 .mobile-nav::-webkit-scrollbar{display:none;}
 .mnav-btn{
-  display:flex;flex-direction:column;align-items:center;gap:2px;
-  background:none;border:none;cursor:pointer;padding:6px 8px;
+  display:inline-flex;flex-direction:column;align-items:center;gap:2px;
+  background:none;border:none;cursor:pointer;padding:6px 10px;
   font-family:var(--sans);color:var(--text3);font-size:10px;font-weight:500;
   transition:color 0.12s;
-  flex-shrink:0;min-width:56px;
+  min-width:58px;vertical-align:top;
 }
 .mnav-btn.active{color:var(--gold);}
 .mnav-btn .mico{font-size:20px;line-height:1;}
@@ -469,7 +468,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   .top-actions .tbtn:not(.gold):not(.red):not(.import-btn){display:none;}
   .top-actions{gap:6px;}
   .tbtn{padding:7px 12px;font-size:12px;}
-  .mobile-nav{display:flex;}
+  .mobile-nav{display:block;}
   .mnav-scan-fab{display:flex;}
   .modal{padding:20px 16px;border-radius:16px 16px 0 0;max-height:92vh;
     position:fixed;bottom:0;left:0;right:0;width:100%;max-width:100%;}
@@ -514,7 +513,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         // Populate version badge - reads from APP_VERSION constant defined later
         // We hardcode it here too so it shows before JS fully loads
         var badge=document.getElementById('lock-ver-badge');
-        if(badge)badge.textContent='v13 — index.html #34 — 2026-04-09';
+        if(badge)badge.textContent='v13 — index.html #35 — 2026-04-09';
         // Populate URL/filename
         var el=document.getElementById('lock-url-display');
         if(!el)return;
@@ -827,7 +826,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 // ══ STATE ══
 var VAULT_KEY='fvg_data_v2';
 // ↓↓↓ UPDATE THIS EACH COMMIT ↓↓↓
-var APP_VERSION='v13 — index.html #34 — 2026-04-09';
+var APP_VERSION='v13 — index.html #35 — 2026-04-09';
 // ↑↑↑ UPDATE THIS EACH COMMIT ↑↑↑
 var PW_KEY='fvg_pw_v2';
 var ACTIVE_TAB='docs';
@@ -3709,7 +3708,7 @@ showApp=function(){
   // Service worker: only register when served from http/https (not file://)
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     var swScript = `
-var CACHE="fv-v17";
+var CACHE="fv-v18";
 self.addEventListener("install",function(e){self.skipWaiting();});
 self.addEventListener("activate",function(e){
   e.waitUntil(caches.keys().then(function(keys){

@@ -1,4 +1,4 @@
-<!-- FILE: index.html | COMMIT #22 | Built: 2026-04-09 | Do not edit manually -->
+<!-- FILE: index.html | COMMIT #23 | Built: 2026-04-09 | Do not edit manually -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -508,7 +508,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         // Populate version badge - reads from APP_VERSION constant defined later
         // We hardcode it here too so it shows before JS fully loads
         var badge=document.getElementById('lock-ver-badge');
-        if(badge)badge.textContent='v13 — index.html #22 — 2026-04-09';
+        if(badge)badge.textContent='v13 — index.html #23 — 2026-04-09';
         // Populate URL/filename
         var el=document.getElementById('lock-url-display');
         if(!el)return;
@@ -630,6 +630,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <input class="api-key-inp" type="password" id="api-key-inp" placeholder="sk-ant-api03-…" autocomplete="off"/>
         <button class="api-key-save-btn" onclick="saveApiKey()">Save</button>
         <button class="api-key-clear-btn" id="api-key-clear-btn" onclick="clearApiKey()" style="display:none">Clear</button>
+        <button class="api-key-clear-btn" id="api-key-show-btn" onclick="toggleShowApiKey()" style="display:none" title="Show/hide full key">👁</button>
       </div>
     </div>
     <p style="font-size:11px;color:var(--text3);margin-bottom:14px;line-height:1.6">
@@ -819,7 +820,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 // ══ STATE ══
 var VAULT_KEY='fvg_data_v2';
 // ↓↓↓ UPDATE THIS EACH COMMIT ↓↓↓
-var APP_VERSION='v13 — index.html #22 — 2026-04-09';
+var APP_VERSION='v13 — index.html #23 — 2026-04-09';
 // ↑↑↑ UPDATE THIS EACH COMMIT ↑↑↑
 var PW_KEY='fvg_pw_v2';
 var ACTIVE_TAB='docs';
@@ -2338,6 +2339,21 @@ function clearApiKey() {
   localStorage.removeItem('fvg_apikey');
   updateApiKeyUI();
 }
+function toggleShowApiKey() {
+  var key = localStorage.getItem('fvg_apikey') || '';
+  if (!key) return;
+  var label = document.getElementById('api-key-label');
+  var btn = document.getElementById('api-key-show-btn');
+  if (btn && btn.dataset.showing === '1') {
+    label.textContent = '✓ API Key saved (' + key.slice(0,8) + '…)';
+    btn.textContent = '👁';
+    btn.dataset.showing = '0';
+  } else {
+    label.textContent = '✓ ' + key;
+    btn.textContent = '🙈';
+    if (btn) btn.dataset.showing = '1';
+  }
+}
 function updateApiKeyUI() {
   var key = localStorage.getItem('fvg_apikey') || '';
   var banner = document.getElementById('api-key-banner');
@@ -2345,16 +2361,19 @@ function updateApiKeyUI() {
   var clearBtn = document.getElementById('api-key-clear-btn');
   var inp = document.getElementById('api-key-inp');
   if (!banner) return;
+  var showBtn = document.getElementById('api-key-show-btn');
   if (key) {
     banner.className = 'api-key-banner ok';
     label.textContent = '✓ API Key saved (' + key.slice(0,8) + '…)';
     if (clearBtn) clearBtn.style.display = 'inline-block';
+    if (showBtn) showBtn.style.display = 'inline-block';
     if (inp) inp.style.display = 'none';
     banner.querySelector('.api-key-save-btn').style.display = 'none';
   } else {
     banner.className = 'api-key-banner';
     label.textContent = '⚠ API Key needed';
     if (clearBtn) clearBtn.style.display = 'none';
+    if (showBtn) showBtn.style.display = 'none';
     if (inp) inp.style.display = '';
     banner.querySelector('.api-key-save-btn').style.display = '';
   }

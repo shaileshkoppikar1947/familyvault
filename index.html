@@ -1153,6 +1153,7 @@ function esc(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/
 
 // ══ SIDEBAR ══
 function renderSidebar(){
+  updateMobileNav();
   var h='';
   h+='<div style="padding:8px 0">';
   h+='<div class="sb-label">Sections</div>';
@@ -3005,9 +3006,29 @@ function mobileNavTab(tab) {
 }
 
 function updateMobileNav() {
-  document.querySelectorAll('.mnav-btn').forEach(function(b) { b.classList.remove('active'); });
-  var btn = document.getElementById('mn-'+ACTIVE_TAB);
-  if (btn) btn.classList.add('active');
+  // Rebuild nav to include custom categories
+  var nav = document.getElementById('mobile-nav');
+  if (!nav) return;
+  // Build base tabs
+  var tabs = [
+    {tab:'docs', ico:'🪪', label:'Docs'},
+    {tab:'bank', ico:'🏦', label:'Bank'},
+    {tab:'passwords', ico:'🔑', label:'Passwords'},
+    {tab:'medical', ico:'🏥', label:'Medical'},
+  ];
+  // Add custom categories
+  (DATA.customCategories||[]).forEach(function(cat){
+    tabs.push({tab:'cat_'+cat.id, ico:cat.icon||'📁', label:cat.name.slice(0,8)});
+  });
+  // Always end with settings
+  tabs.push({tab:'settings', ico:'⚙️', label:'Settings'});
+  // Rebuild nav HTML
+  nav.innerHTML = tabs.map(function(t){
+    var active = ACTIVE_TAB===t.tab?' active':'';
+    return '<button class="mnav-btn'+active+'" onclick="mobileNavTab(''+t.tab+'')" id="mn-'+t.tab+'">'
+      +'<span class="mico">'+t.ico+'</span><span>'+t.label+'</span>'
+      +'</button>';
+  }).join('');
 }
 
 // ══ MOBILE FILE PICK SHEET ══

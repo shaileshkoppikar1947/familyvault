@@ -1,4 +1,4 @@
-<!-- FILE: index.html | COMMIT #26 | Built: 2026-04-09 | Do not edit manually -->
+<!-- FILE: index.html | COMMIT #27 | Built: 2026-04-09 | Do not edit manually -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -508,7 +508,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         // Populate version badge - reads from APP_VERSION constant defined later
         // We hardcode it here too so it shows before JS fully loads
         var badge=document.getElementById('lock-ver-badge');
-        if(badge)badge.textContent='v13 — index.html #26 — 2026-04-09';
+        if(badge)badge.textContent='v13 — index.html #27 — 2026-04-09';
         // Populate URL/filename
         var el=document.getElementById('lock-url-display');
         if(!el)return;
@@ -628,6 +628,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <span class="api-key-label" id="api-key-label">⚠ API Key needed</span>
       <div class="api-key-input-wrap">
         <input class="api-key-inp" type="password" id="api-key-inp" placeholder="sk-ant-api03-…" autocomplete="off"/>
+        <button onclick="var i=document.getElementById('api-key-inp');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="background:none;border:1px solid var(--border);border-radius:4px;padding:6px 8px;cursor:pointer;font-size:13px">👁</button>
         <button class="api-key-save-btn" onclick="saveApiKey()">Save</button>
         <button class="api-key-clear-btn" id="api-key-clear-btn" onclick="clearApiKey()" style="display:none">Clear</button>
         <button class="api-key-clear-btn" id="api-key-show-btn" onclick="toggleShowApiKey()" style="display:none" title="Show/hide full key">👁</button>
@@ -820,7 +821,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 // ══ STATE ══
 var VAULT_KEY='fvg_data_v2';
 // ↓↓↓ UPDATE THIS EACH COMMIT ↓↓↓
-var APP_VERSION='v13 — index.html #26 — 2026-04-09';
+var APP_VERSION='v13 — index.html #27 — 2026-04-09';
 // ↑↑↑ UPDATE THIS EACH COMMIT ↑↑↑
 var PW_KEY='fvg_pw_v2';
 var ACTIVE_TAB='docs';

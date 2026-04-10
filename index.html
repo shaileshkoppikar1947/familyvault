@@ -1,4 +1,4 @@
-<!-- FILE: index.html | COMMIT #23 | Built: 2026-04-09 | Do not edit manually -->
+<!-- FILE: index.html | COMMIT #24 | Built: 2026-04-09 | Do not edit manually -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -508,7 +508,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         // Populate version badge - reads from APP_VERSION constant defined later
         // We hardcode it here too so it shows before JS fully loads
         var badge=document.getElementById('lock-ver-badge');
-        if(badge)badge.textContent='v13 — index.html #23 — 2026-04-09';
+        if(badge)badge.textContent='v13 — index.html #24 — 2026-04-09';
         // Populate URL/filename
         var el=document.getElementById('lock-url-display');
         if(!el)return;
@@ -820,7 +820,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 // ══ STATE ══
 var VAULT_KEY='fvg_data_v2';
 // ↓↓↓ UPDATE THIS EACH COMMIT ↓↓↓
-var APP_VERSION='v13 — index.html #23 — 2026-04-09';
+var APP_VERSION='v13 — index.html #24 — 2026-04-09';
 // ↑↑↑ UPDATE THIS EACH COMMIT ↑↑↑
 var PW_KEY='fvg_pw_v2';
 var ACTIVE_TAB='docs';
@@ -3576,6 +3576,22 @@ showApp=function(){
 <div class="mobile-pick-sheet" id="mobile-pick-sheet">
   <div class="mps-handle"></div>
   <div class="mps-title">Choose Document Source</div>
+  <div id="mps-api-status" style="font-size:12px;margin-bottom:12px;padding:8px 12px;border-radius:6px;display:flex;align-items:center;gap:8px;justify-content:space-between"></div>
+  <script>
+  (function(){
+    var key=localStorage.getItem('fvg_apikey')||'';
+    var el=document.getElementById('mps-api-status');
+    if(!el)return;
+    if(key){
+      el.style.background='#e6f4ea';el.style.color='#1a7a4a';el.style.border='1px solid rgba(26,122,74,0.2)';
+      el.innerHTML='<span>✓ API Key: <span id="mps-key-val">'+key.slice(0,10)+'…</span></span>'
+        +'<button onclick="(function(){var k=localStorage.getItem(\'fvg_apikey\')||\'\';var v=document.getElementById(\'mps-key-val\');var b=document.getElementById(\'mps-key-toggle\');if(v.dataset.shown===\'1\'){v.textContent=k.slice(0,10)+\'…\';v.dataset.shown=\'0\';b.textContent=\'👁\';}else{v.textContent=k;v.dataset.shown=\'1\';b.textContent=\'🙈\';}})();" id="mps-key-toggle" style="background:none;border:1px solid rgba(26,122,74,0.3);border-radius:4px;padding:3px 8px;cursor:pointer;font-size:13px">👁</button>';
+    } else {
+      el.style.background='#fff8e6';el.style.color='#c47a1a';el.style.border='1px solid rgba(196,122,26,0.3)';
+      el.innerHTML='⚠ No API key — open Scan Doc on desktop to add one';
+    }
+  })();
+  </script>
   <div class="mps-grid">
 
     <label class="mps-btn">

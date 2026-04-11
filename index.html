@@ -1,28 +1,21 @@
-<!-- FILE: index.html | COMMIT #36 | Built: 2026-04-11 | Do not edit manually -->
+<!-- FILE: index.html | COMMIT #37 | Built: 2026-04-11 | Do not edit manually -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <script>
-// Force clear old service worker caches on every load
+// ── NUCLEAR SW RESET: unregister ALL SWs + clear ALL old caches on every load ──
+var _CURRENT_CACHE='fv-v20';
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(function(regs){
-    regs.forEach(function(reg){
-      // Unregister old cache versions
-      reg.active && reg.active.scriptURL && console.log('SW active:', reg.active.scriptURL);
-      // Tell the SW to skip waiting and take control immediately
-      if(reg.active){reg.active.postMessage({type:'SKIP_WAITING'});}
-      // Force update check
-      reg.update();
-    });
-  });
-  // Clear all old caches except current version
-  caches.keys().then(function(keys){
-    keys.forEach(function(key){
-      if(key!=='fv-v19'){caches.delete(key);console.log('Cleared cache:',key);}
-    });
+    regs.forEach(function(reg){ reg.unregister(); });
   });
 }
+caches.keys().then(function(keys){
+  keys.forEach(function(key){
+    if(key!==_CURRENT_CACHE){ caches.delete(key); }
+  });
+});
 </script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes"/>
@@ -513,7 +506,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         // Populate version badge - reads from APP_VERSION constant defined later
         // We hardcode it here too so it shows before JS fully loads
         var badge=document.getElementById('lock-ver-badge');
-        if(badge)badge.textContent='v13 — index.html #35 — 2026-04-09';
+        if(badge)badge.textContent='v14 — index.html #37 — 2026-04-11';
         // Populate URL/filename
         var el=document.getElementById('lock-url-display');
         if(!el)return;
@@ -769,7 +762,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 <!-- APP -->
 <div id="app">
   <div class="top-bar">
-    <div class="app-logo"><div class="app-logo-icon">🔐</div>Family Vault<span style="font-size:10px;font-weight:500;color:var(--text3);font-family:var(--mono);margin-left:6px;padding:2px 6px;background:var(--surface2);border-radius:4px;border:1px solid var(--border)">v13</span></div>
+    <div class="app-logo"><div class="app-logo-icon">🔐</div>Family Vault<span style="font-size:10px;font-weight:500;color:var(--text3);font-family:var(--mono);margin-left:6px;padding:2px 6px;background:var(--surface2);border-radius:4px;border:1px solid var(--border)">v14</span></div>
     <div class="top-actions">
       <input type="file" id="import-file" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)"/>
       <input type="file" id="lp-csv-file" accept=".csv" style="display:none" onchange="importLastPassCSV(event)"/>
@@ -826,7 +819,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 // ══ STATE ══
 var VAULT_KEY='fvg_data_v2';
 // ↓↓↓ UPDATE THIS EACH COMMIT ↓↓↓
-var APP_VERSION='v13 — index.html #35 — 2026-04-09';
+var APP_VERSION='v14 — index.html #37 — 2026-04-11';
 // ↑↑↑ UPDATE THIS EACH COMMIT ↑↑↑
 var PW_KEY='fvg_pw_v2';
 var ACTIVE_TAB='docs';
@@ -3715,7 +3708,7 @@ showApp=function(){
   // Service worker: only register when served from http/https (not file://)
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     var swScript = `
-var CACHE="fv-v19";
+var CACHE="fv-v20";
 self.addEventListener("install",function(e){self.skipWaiting();});
 self.addEventListener("activate",function(e){
   e.waitUntil(caches.keys().then(function(keys){

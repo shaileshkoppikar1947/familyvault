@@ -1,4 +1,4 @@
-<!-- FILE: index.html | COMMIT #39 | Built: 2026-04-11 | Do not edit manually -->
+<!-- FILE: index.html | COMMIT #41 | Built: 2026-04-11 | Do not edit manually -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -506,7 +506,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         // Populate version badge - reads from APP_VERSION constant defined later
         // We hardcode it here too so it shows before JS fully loads
         var badge=document.getElementById('lock-ver-badge');
-        if(badge)badge.textContent='v14 — index.html #39 — 2026-04-11';
+        if(badge)badge.textContent='v14 — index.html #41 — 2026-04-11';
         // Populate URL/filename
         var el=document.getElementById('lock-url-display');
         if(!el)return;
@@ -819,7 +819,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 // ══ STATE ══
 var VAULT_KEY='fvg_data_v2';
 // ↓↓↓ UPDATE THIS EACH COMMIT ↓↓↓
-var APP_VERSION='v14 — index.html #39 — 2026-04-11';
+var APP_VERSION='v14 — index.html #41 — 2026-04-11';
 // ↑↑↑ UPDATE THIS EACH COMMIT ↑↑↑
 var PW_KEY='fvg_pw_v2';
 var ACTIVE_TAB='docs';
@@ -3619,23 +3619,17 @@ showApp=function(){
     }
   })();
   </script>
-  <div class="mps-grid" style="grid-template-columns:repeat(2,1fr);max-width:280px;margin:0 auto 12px;">
+  <div class="mps-grid" style="grid-template-columns:repeat(1,1fr);max-width:200px;margin:0 auto 12px;">
 
     <label class="mps-btn" id="mps-files-btn">
-      <span class="mps-ico">📁</span>
-      <span>Files &amp; Downloads</span>
-      <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip" onchange="onMobileFilePick(event)"/>
-    </label>
-
-    <label class="mps-btn">
-      <span class="mps-ico">🟢</span>
-      <span>Google Drive</span>
-      <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip" onchange="onMobileFilePick(event)"/>
+      <span class="mps-ico">📄</span>
+      <span>Browse Files</span>
+      <input type="file" accept=".pdf,application/pdf" onchange="onMobileFilePick(event)"/>
     </label>
 
   </div>
   <div style="font-size:11px;color:#999;text-align:center;padding:0 16px 4px;line-height:1.5">
-    Tap a button → file picker opens → navigate to your file
+    Tap ☰ in the picker → choose Downloads, Google Drive, or any folder
   </div>
     <button class="mps-cancel" onclick="closeMobilePickSheet()">Cancel</button>
 </div>
